@@ -9,6 +9,7 @@ from Game.formation_grader import calc_grades, create_formation_from_list
 from Game.post_game import PostGameProcessor
 import Game.freshness_update as fu
 
+from Helpers.telegram_manager import send_log_message
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -161,29 +162,35 @@ class GameProcessor:
         - team2_id: The ID of the second team.
         - Returns: Dictionary containing the result and player stories.
         """
+        send_log_message("2.Update Freshness")
 
         fu.update_freshness_for_team(team1_id)
         fu.update_freshness_for_team(team2_id)
+        send_log_message("3.Get formation")
         # Step 1: Retrieve formations
         team1_formation = self.get_team_formation(team1_id)
         team2_formation = self.get_team_formation(team2_id)
-
+        send_log_message("4.Update formation")
         db.insert_opening_formations(self.game_id)
 
+        send_log_message("5.Calc team grades")
         # Step 2: Calculate grades for both teams
         team1_grades = self.calculate_team_grades(team1_formation)
         team2_grades = self.calculate_team_grades(team2_formation)
-
+        send_log_message("6.Simulate the game")
         # Step 3: Simulate the game
         team1_score, team2_score = self.simulate_game(team1_grades, team2_grades)
 
         # Step 4: Process post-game data using PostGameProcessor
         output = self.post_game_processor.process_post_game(team1_id, team2_id, team1_score, team2_score)
+        send_log_message("7.Insert into db all match data")
+
         db.insert_match_details(self.game_id, output.get('events', []))
         db.update_matche_result(self.game_id, f"{team1_score}-{team2_score}")
         db.update_match_time(self.game_id, output.get('time_played_mins'))
         # Step 5: Update Players DB with new attributes and freshness
         self.update_player_data_in_db(self.game_id, output['player_stories'])
+        send_log_message("8.End game_hub")
 
         # Step 6: Return the result and player stories
         return output

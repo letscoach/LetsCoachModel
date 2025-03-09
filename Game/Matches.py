@@ -132,6 +132,7 @@ def generate_schedule_single_round(league_id, start_date):
 
 
 def game_launcher(match):
+    telegram.send_log_message("1.launch game now")
     game_processor = game_controller.GameProcessor(match['match_id'])
     output = game_processor.init_game(match['home_team_id'], match['away_team_id'])
     telegram.send_log_message(f'Match id : {match.get("match_id", "Not Available")} Completed!, Score: {output.get("result",{}).get("team1_score")}'
