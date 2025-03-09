@@ -4,34 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e0f44101-cae1-4f69-86ec-cd97578cb509" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/.idea/pythonProject.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/League.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/Matches.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/formation_grader.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/freshness_update.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/game.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/game_hub.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/game_model.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/post_game.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/SQL_db.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/sql_cred.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/sql_queries.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/table_def.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/telegram_manager.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Training/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Training/training.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/requirements.txt" afterDir="false" />
-    </list>
+    <list default="true" id="e0f44101-cae1-4f69-86ec-cd97578cb509" name="Changes" comment="init model repo" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -115,7 +88,20 @@
       <option name="presentableId" value="Default" />
       <updated>1741190390728</updated>
     </task>
+    <task id="LOCAL-00001" summary="init model repo">
+      <option name="closed" value="true" />
+      <created>1741506428072</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1741506428072</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="init model repo" />
+    <option name="LAST_COMMIT_MESSAGE" value="init model repo" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
