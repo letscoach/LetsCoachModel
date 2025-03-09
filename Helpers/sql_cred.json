@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "zinc-strategy-446518-s7",
+  "private_key_id": "6f7832ee395943973cd464829d299382c5e7eaec",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCdiA57JRu9QC/x\n0H4ZTkvakAeRP9yWywgPwhozoDIWBhGuzXW+e0VBGB3slfzEM3ng7J6Ntw7c/h9x\n74Izy/8ZFDkIk1KYt3nfxWTNjw6GdbxML0N0zrjDQc5PJXhRIaUKMeiGRaSa2DfY\n08VPFKROvdB7GGxBlAKr5asBiPd4mhP+XrCY2gMG8ta56oNN0gbQSaHV4b4AAVnp\n0J+PHhVQZ8lxaVl8ZEZPx1fYu384x+ol9vb+T0jY1d6289FCZX9w3xXPW2hjIwLW\nx4K62MGD8bZkwdvHBRoM40tQsKmM+iPQ8FnbUd6EHUiAgT+Nk+wCB+hPHsmFPjw5\naMg4NnTbAgMBAAECggEAGrVwOxnKD7a7ykR+tLytKLPlzI8mz9xBlCZlOd6Nz2Ud\nB2WncnHFBqnXnP67GereXa/QnBdu6jId07v3d9+88xwWJWmRBfqJq9J0alO4czyv\n/by/s6S+98AHAi1IrnzFViqrEWTqaSSCp30URXmq9/y/xbcY16+IGmv4p+x4hNZa\nW1r+tRpIkbeXv27mRCpYnBpaBecpobYpyPNdqpuYCUz1MaRbtl3LOYwYhiIjCtnL\nGnG+Ibb0+KYi/qAeyRfyXgZ3Tr9mIW1UwfBjbT57bFYZ+sOIz6yOLh5qqWAJKfSc\nb0nzfzKKVwan4p+kgHQCmHnqgf9PADQSoq4DITOPoQKBgQDek///OQy1PJ2djAGi\nJSozGVv4mwtyzPxp92lYzAxqYXpXq37KzRn78xVgaY1HdzZ3z2Vst9WVFzv3IqkG\nlJnTlrc6Y9FJnfNBK3kHOudBzorwbGi3sLfL/tOcMmp0jebh7U01DYgC86Y8pETS\n/2rH7OfBGnpesgsUG6zkiZSp4QKBgQC1L6KHw2ComW2xGQVxiz/MeEwVk8mBlhHL\nEe3YfElfh0ks03ZLHftbKUyDBgOx5hDmh+YjaAHEchoaVxAXA6s4s/Lzkl4Jmet5\nwfNjd4NbLDDjjjfEV8tAg/Bm4jfRcbkzH5aADBL4wOHJ+Sk9s/HYg6fmg3mfPSfH\ncBh9AMkOOwKBgGeQeccppm4V/Ei4QnJN1KreG9s7WUJbev9bbZsxpn1BSgnM9Dws\n3vBKlSG9O02LfL6Ws9y4VRsAKpi9eeRj9IdtU2hJ1bHpWqxyK+hfUgdesWtZJgiC\no6K5uYCuPLZq6IkrP4d1+llVQX5p+NQsoGTSKKvDRDkXouwCTJoyIghBAoGAd4r+\nSWT3GUZhwT8pAElHxrh4OqRPh1hkVP93ViZqosS32wOKQPV/Kh6NhMUrGu0YqYFw\nrlupDtvZrRdUXlrlVXwlB9/Ce8M6QhNdansoB7eYagsjcEAcsmxa6QbInT/TWY+1\n1LYirk1Uq9XhB/z5zEjRNp34WMAYxtWG0rL59JECgYBk9Z1cOB2h1i7g3AZKW5kh\nDILjh2KEte4X0FBS+Ittm3fs12ShZAh+hGWQq7YeH4thTzjRInBcJCvaOQRFbDUS\nplZP0AhRV88zWp+aMD7lJ+eKjhdX7eO4krjn0MgDcWvNTVc24FWR5CMJcWC08emH\nB4kScirH44Xu2Adp6dsPFw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "database-letscoach@zinc-strategy-446518-s7.iam.gserviceaccount.com",
+  "client_id": "103527750849136536919",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/database-letscoach%40zinc-strategy-446518-s7.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
