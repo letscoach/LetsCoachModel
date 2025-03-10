@@ -6,6 +6,7 @@ import Helpers.SQL_db as sql_db
 
 import Game.game_hub as game_controller
 import Helpers.telegram_manager as telegram
+from Helpers.google_cloud_helpers import create_task_for_match
 
 
 def generate_schedule(league_id, start_date):
@@ -197,7 +198,7 @@ def generate_schedule_double_round(league_id, start_date, days_between_matchdays
 
             match = {
                 "league_id": league_id,
-                "match_datetime": round_date,
+                "match_datetime": round_date + timedelta(hours=7),
                 "home_team_id": home_team,
                 "away_team_id": away_team,
                 "match_day": round_idx + 1  # 1-based matchday numbering
@@ -243,14 +244,15 @@ def generate_schedule_double_round(league_id, start_date, days_between_matchdays
         dt_str = m['match_datetime'].strftime("%d.%m.%Y")
         league_msg += f"Round {m['match_day']} | {dt_str} | {m['home_team_id']} vs {m['away_team_id']}\n"
     telegram.send_log_message(league_msg)
+    sql_db.insert_init_matches(full_schedule)
+    for sc in full_schedule:
+        create_task_for_match(sc)
 
     # 6) Insert matches into the DB
-    sql_db.insert_init_matches(full_schedule)
     telegram.send_log_message(f"Scheduling insert successfully! Start date: {start_date}")
 
     return full_schedule
 
 
-#generate_schedule_double_round(4,'10.03.2025', 1)
 
 #get_current_matches()

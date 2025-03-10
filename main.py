@@ -1,20 +1,19 @@
 import os
 import functions_framework
-from Game.Matches import game_launcher
+from Game.Matches import game_launcher, generate_schedule_double_round
 from Helpers.telegram_manager import send_log_message
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
 
-# @app.route("/", methods=["POST"])
+@app.route("/", methods=["POST"])
 def LetscoachModel():
     """Cloud Function that runs the match algorithm"""
     try:
         send_log_message("Cloud function running now")
-        request_json = dict(match_id=259,away_team_id=67,home_team_id=74)
-        # request_json = request.get_json(silent=True)
-
+        # request_json = dict(match_id=259,away_team_id=67,home_team_id=74)
+        request_json = request.get_json(silent=True)
         away_team_id = request_json.get('away_team_id')
         home_team_id = request_json.get('home_team_id')
         match_id = request_json.get('match_id')
@@ -25,7 +24,8 @@ def LetscoachModel():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-LetscoachModel()
+# LetscoachModel()
+# generate_schedule_double_round(4,'11.03.2025', 1)
 
 # if __name__ == "__main__":
 #     port = int(os.environ.get("PORT", 8080))
