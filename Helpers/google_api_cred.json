@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "zinc-strategy-446518-s7",
+  "private_key_id": "ca42ff440bd29fae4fff24907a862747ea68d65b",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDFZ60hX3pqGpwp\nBgxhbMEIbfvbqQ2gXpCz/TylK8eaPcS2k1pKcyso5dheMHQtdy20a8wcY+QRMTxN\nZe1M2//iQtGN6l/af/OiYd8whtgyAufKVveBHD/Yb+Lyvl+I/xBBgfdVjA3yCSS1\nP4GeU9Ov7NY5ZFnSqToqMG+3SYzqKqc/2avDTxVr7oURhy5ZZeKVd4RdWirMWJ1V\nxwyyRJYtISfCsS0G4gm06tNrvI78qY+oRh0Zb+Jm31kbVQ+Njpb3voHbnaG+GObu\nv02NzFowPUXMkjCRNTzEcfK1kVURPkyfEPoIySH5ZKBDkgjX/dCGCDxg0p428v2y\nWL/lY7QxAgMBAAECggEAX3PR1fzOewbR8s4/Z06IinRwH9d/RMflLXsqe22Pbygl\n+eiHdM96k6SMOoMwchmaKo8jW6j7i0qk74H1PEB22yfXH0mwvr03CBJOMy9I0+nu\nvbrOpAoOXzA+64SdOmenKx3WhHGb/qhoLRH/sZi0F/Gr5oV9H21/uA3Cvzxb3JAY\nRwDlouTLvR+MXuXEVwmBMlESonThbMyHepqv0XFf1FIK5KYm4bE72DvurdtMJIFz\n72Oq875GDPRQZW+YghITjQApnkCFcC03+zoMJV2HIrkhC+C2XUR/PPlcMvf120U0\n9RfOWeAnvES8msacC+7zsYktb9nQnwBAGx9N19ucjwKBgQDzai43MxbPX0R1VsBg\nxHxAFZ9p04Fyf7aIieT2NwtYXcBur9cBZNc6HdcdpPP6K1JiNIVqp7stYrnDwzXP\nTgx+iI+A8m5si2R3NFqo/GsaRrdnqrDU/GC1h7U0eRqQrz1LV9uX0o+9QWd44sWf\nQ0loALnBOaCev3qXNPqjaLnx8wKBgQDPnIOF0gsFf/HQT4fmFsxVI19rymacEWcc\nXmtw8jNUdMzKMbkxuKcXTFZrBEvse1+l8UtGY233YeCbdzMexiE37WHmhPywJkVb\ne+5Knqvk2LjGiAJbIhgQQ1g349WtbR1/6ZomW4rQiJCgMsc6P9Ah3PyCiVmFioUq\n2RgpKzFmSwKBgQDJ0eXTurZU5gZay7zh/seOUt9D3SvdBWsQtlRymJz9fW4J2B2K\neFPDSe6ME7J+X+EEr8tW7Q9SyCKB358D7RCK8SsanOdVdBWuiGgK6I7c0HlMqMfJ\nMB/3Izfo8+hEwicuCwB1Vw36uvnRzyRPsnhwlPlu7hrwxI4eRLzzM+fIZQKBgBgL\nQlgvOUOLy8+aRlzpawS5MgXjzPpqMYzhioPsKPGxDT6lf5M4lXFnT+LY/ooGx88K\nIPOn9EZgOYkHxw3bWGGHxnzSDgnAhOvRcImH0tSQHOYxPkSbsDnB8ueWJVsOdgoo\nXcfvdiYsisNi3hvq5Ann8/6SNaH3pvCNb/TkobX9AoGAMJNgpeAQvafi15Ae6Ldz\nGjRxqlZ1sDr7E48Lh25BRWJfsAy2mhTB6RxWqcaXzY5BfaFjmkqMpSv8AgcU590Y\nPiJ9FYQTfW3AYNnW1vFWgynSHF44HkICb6P1KzSQt3CqoCKwE5UL2eSNI7KZIZ53\nEZzUESS7g8xpVVNqt32oPZY=\n-----END PRIVATE KEY-----\n",
+  "client_email": "gamescheduler@zinc-strategy-446518-s7.iam.gserviceaccount.com",
+  "client_id": "115678730854667876342",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/gamescheduler%40zinc-strategy-446518-s7.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

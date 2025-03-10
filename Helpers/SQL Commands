@@ -1,0 +1,35 @@
+GAME LAUNCHER SCHEDULER TRIGGER :
+
+CREATE TRIGGER after_match_insert
+AFTER INSERT ON matches
+FOR EACH ROW
+BEGIN
+    DECLARE cloud_function_url VARCHAR(255);
+    DECLARE scheduled_time VARCHAR(255);
+
+    -- URL of the Cloud Function that creates the Cloud Task
+    SET cloud_function_url = 'https://cloudtasks.googleapis.com/v2/projects/zinc-strategy-446518-s7/locations/us-central1/queues/LaunchModelGame/tasks';
+
+    -- Format the scheduled time from the new record
+    SET scheduled_time = DATE_FORMAT(NEW.match_datetime, '%Y-%m-%dT%H:%i:%sZ');
+
+    -- Construct the JSON payload
+    SET @json_payload = CONCAT(
+        '{ "task": { "schedule_time": "', scheduled_time, '", ',
+        '"http_request": { "http_method": "POST", ',
+        '"url": "https://letcoach-model-354078768099.us-central1.run.app", ',
+        '"headers": { "Content-Type": "application/json" }, ',
+        '"body": "', TO_BASE64(CONCAT('{"match_id": ', NEW.match_id,',"home_team_id": ', NEW.home_team_id, ',"away_team_id" :' ,NEW.away_team_id, '}')), '" } } }'
+    );
+
+    -- Send HTTP request to Cloud Function (which will handle Cloud Task creation)
+    -- Replace with a tool capable of sending HTTP requests, like UDF (User Defined Functions)
+    -- Alternatively, use an external tool for triggering the Cloud Function
+
+    -- (Your external service or tool should be responsible for calling this URL with the payload)
+    -- Example: curl command that is triggered outside of MySQL for execution
+    SET @query = CONCAT('CALL external_tool_or_service("', cloud_function_url, '", "', @json_payload, '");');
+    -- Execute the command externally (outside MySQL)
+
+END
+
