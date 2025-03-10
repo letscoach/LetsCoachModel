@@ -244,7 +244,7 @@ def generate_schedule_double_round(league_id, start_date, days_between_matchdays
         dt_str = m['match_datetime'].strftime("%d.%m.%Y")
         league_msg += f"Round {m['match_day']} | {dt_str} | {m['home_team_id']} vs {m['away_team_id']}\n"
     telegram.send_log_message(league_msg)
-    sql_db.insert_init_matches(full_schedule)
+    full_schedule = sql_db.insert_init_matches(full_schedule)
     for sc in full_schedule:
         create_task_for_match(sc)
 
