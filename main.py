@@ -7,12 +7,13 @@ from flask import Flask, jsonify, request
 app = Flask(__name__)
 
 
-@app.route("/", methods=["POST"])
+# @app.route("/", methods=["POST"])
 def LetscoachModel():
     """Cloud Function that runs the match algorithm"""
     try:
         send_log_message("Cloud function running now")
-        request_json = request.get_json(silent=True)
+        request_json = dict(match_id=259,away_team_id=67,home_team_id=74)
+        # request_json = request.get_json(silent=True)
 
         away_team_id = request_json.get('away_team_id')
         home_team_id = request_json.get('home_team_id')
@@ -24,7 +25,8 @@ def LetscoachModel():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+LetscoachModel()
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+# if __name__ == "__main__":
+#     port = int(os.environ.get("PORT", 8080))
+#     app.run(host="0.0.0.0", port=port)
