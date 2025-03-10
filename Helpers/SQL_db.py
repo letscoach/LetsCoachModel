@@ -361,7 +361,9 @@ def insert_init_matches(matches):
     for match in matches:
         query = build_insert_query("matches")
         res = exec_insert_query(query, match)
-    return
+        match['match_id'] = res
+
+    return matches
 
 def update_matche_result(match_id, match_result):
     query = sql_queries.UPDATE_MATCH_RESULT.format(match_id=match_id,match_result=match_result)
