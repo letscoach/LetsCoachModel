@@ -152,5 +152,105 @@ def get_current_matches():
 
         # thread = threading.Thread(target=game_launcher, args=(match,))
         # thread.start()
+def generate_schedule_double_round(league_id, start_date, days_between_matchdays=7):
+    """
+    Generates a double-round (home & away) schedule.
+
+    :param league_id: ID of the league for which schedule is generated
+    :param start_date: "dd.mm.yyyy" string for the first matchday
+    :param days_between_matchdays: number of days between consecutive matchdays
+    :return: Combined schedule of both rounds
+    """
+
+    # 1) Fetch teams from your DB
+    telegram.send_log_message(f'Starting to build your league! date : {start_date}')
+    team_leagues = sql_db.select_league_teams(league_id)
+    num_teams = len(team_leagues)
+
+    # 2) Convert start_date string to datetime object
+    start_dt = datetime.strptime(start_date, "%d.%m.%Y")
+
+    # The single round schedule
+    schedule_first_round = []
+
+    # We'll have (num_teams - 1) total matchdays in a single round-robin
+    total_matchdays = num_teams - 1
+
+    # ---------------------------
+    # Generate the FIRST ROUND
+    # ---------------------------
+    for round_idx in range(total_matchdays):
+        # Calculate the date for this round (using days_between_matchdays)
+        round_date = start_dt + timedelta(days=round_idx * days_between_matchdays)
+
+        matches_for_round = []
+
+        # Generate pairings for the day:
+        for i in range(num_teams // 2):
+            # Optionally alternate home/away based on parity
+            if (round_idx + i) % 2 == 0:
+                home_team = team_leagues[i]
+                away_team = team_leagues[num_teams - 1 - i]
+            else:
+                home_team = team_leagues[num_teams - 1 - i]
+                away_team = team_leagues[i]
+
+            match = {
+                "league_id": league_id,
+                "match_datetime": round_date,
+                "home_team_id": home_team,
+                "away_team_id": away_team,
+                "match_day": round_idx + 1  # 1-based matchday numbering
+            }
+            matches_for_round.append(match)
+
+        # Collect this round’s matches
+        schedule_first_round.extend(matches_for_round)
+
+        # Rotate teams for next round (keeping the first team in place)
+        # Circle method: T[0], T[n-1], T[1], T[2], …, T[n-2]
+        team_leagues = [team_leagues[0]] + [team_leagues[-1]] + team_leagues[1:-1]
+
+    # ---------------------------
+    # Generate the SECOND ROUND by reversing the FIRST ROUND
+    # ---------------------------
+    schedule_second_round = []
+
+    # Offset: how many days to jump after the FIRST ROUND is done
+    # If the first round ends at matchday = total_matchdays,
+    # the second round starts at matchday = total_matchdays + 1
+    # So let's shift all second-round matches by total_matchdays in match_day
+    # and by total_matchdays * days_between_matchdays in match_datetime.
+    offset_days = total_matchdays * days_between_matchdays
+
+    for match in schedule_first_round:
+        # Create a reversed match
+        second_round_match = {
+            "league_id": match["league_id"],
+            "match_datetime": match["match_datetime"] + timedelta(days=offset_days),
+            "home_team_id": match["away_team_id"],  # swapped
+            "away_team_id": match["home_team_id"],  # swapped
+            "match_day": match["match_day"] + total_matchdays
+        }
+        schedule_second_round.append(second_round_match)
+
+    # Combine both rounds
+    full_schedule = schedule_first_round + schedule_second_round
+
+    # Optional: Log schedule for debugging
+    league_msg = 'Double Round League Schedule:\n'
+    for m in full_schedule:
+        dt_str = m['match_datetime'].strftime("%d.%m.%Y")
+        league_msg += f"Round {m['match_day']} | {dt_str} | {m['home_team_id']} vs {m['away_team_id']}\n"
+    telegram.send_log_message(league_msg)
+
+    # 6) Insert matches into the DB
+    sql_db.insert_init_matches(full_schedule)
+    telegram.send_log_message(f"Scheduling insert successfully! Start date: {start_date}")
+
+    return full_schedule
+
+
+#generate_schedule_double_round(4,'10.03.2025', 1)
 
 #get_current_matches()
