@@ -186,8 +186,8 @@ class GameProcessor:
         send_log_message("7.Insert into db all match data")
 
         db.insert_match_details(self.game_id, output.get('events', []))
-        db.update_matche_result(self.game_id, f"{team1_score}-{team2_score}")
-        db.update_match_time(self.game_id, output.get('time_played_mins'))
+        db.update_matche_result(self.game_id, f"{team1_score}-{team2_score}",output.get('time_played_mins'))
+        # db.update_match_time(self.game_id, output.get('time_played_mins'))
         # Step 5: Update Players DB with new attributes and freshness
         self.update_player_data_in_db(self.game_id, output['player_stories'])
         send_log_message("8.End game_hub")

@@ -365,8 +365,8 @@ def insert_init_matches(matches):
 
     return matches
 
-def update_matche_result(match_id, match_result):
-    query = sql_queries.UPDATE_MATCH_RESULT.format(match_id=match_id,match_result=match_result)
+def update_matche_result(match_id, match_result,min_played):
+    query = sql_queries.UPDATE_MATCH_RESULT.format(match_id=match_id,match_result=match_result, time_played_mins=min_played)
     res = exec_update_query(query)
     return res
 

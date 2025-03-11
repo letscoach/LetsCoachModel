@@ -310,7 +310,8 @@ UPDATE_MATCH_RESULT = '''
 UPDATE
   matches
 SET
-  result = '{match_result}'
+    result = '{match_result}',
+    time_played_mins = '{time_played_mins}'
 WHERE
   match_id = {match_id};
 '''
