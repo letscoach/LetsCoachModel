@@ -1,22 +1,34 @@
 GET_PLAYERS = '''
-SELECT
-    p.*,s.status_name,
-    GROUP_CONCAT(CONCAT(a.attribute_name, ': ', pa.attribute_value) SEPARATOR ', ') AS attributes
-FROM
-    players p
-LEFT JOIN
-    player_attributes pa ON p.token = pa.token
-LEFT JOIN
-    attributes a ON pa.attribute_id = a.attribute_id
-LEFT JOIN
-    statuses s ON p.status_id = s.status_id
-WHERE
-    p.status_id IN ({status_id})
-GROUP BY
-    p.token
-ORDER BY
-   status_id, p.creation_date DESC, p.player_id
-  LIMIT {batch},{limit};
+SELECT 
+    p.*, 
+    s.status_name,
+    CONCAT(
+        IFNULL(attr_static, ''), 
+        IF(attr_static IS NOT NULL AND attr_dynamic IS NOT NULL, ', ', ''), 
+        IFNULL(attr_dynamic, '')
+    ) AS attributes
+FROM players p
+LEFT JOIN statuses s ON p.status_id = s.status_id
+LEFT JOIN (
+    SELECT 
+        pa.token, 
+        GROUP_CONCAT(CONCAT(a.attribute_name, ': ', pa.attribute_value) SEPARATOR ', ') AS attr_static
+    FROM player_attributes pa
+    LEFT JOIN attributes a ON pa.attribute_id = a.attribute_id
+    GROUP BY pa.token
+) pa ON p.token = pa.token
+LEFT JOIN (
+    SELECT 
+        pda.token, 
+        GROUP_CONCAT(CONCAT(a.attribute_name, ': ', pda.attribute_value) SEPARATOR ', ') AS attr_dynamic
+    FROM player_dynamic_attributes pda
+    LEFT JOIN attributes a ON pda.attribute_id = a.attribute_id
+    GROUP BY pda.token
+) pda ON p.token = pda.token
+WHERE p.status_id IN ({status_id})
+GROUP BY p.token, s.status_name, pa.attr_static, pda.attr_dynamic
+ORDER BY p.status_id, p.creation_date DESC, p.player_id
+LIMIT {limit} OFFSET {batch};
 '''
 INSERT_OR_UPDATE_TEAM_FORMATION = '''
 INSERT INTO
@@ -52,53 +64,64 @@ VALUES
 
 GET_TEAM_PLAYERS = '''
 SELECT
-    p.name,p.token,
-    GROUP_CONCAT(CONCAT(a.attribute_name, ': ', pa.attribute_value) SEPARATOR ', ') AS attributes,freshness
-FROM
-    players p
-LEFT JOIN
-    player_attributes pa ON p.token = pa.token
-LEFT JOIN
-    player_freshness pf ON p.token = pf.token
-LEFT JOIN
-    attributes a ON pa.attribute_id = a.attribute_id
+    p.name,
+    p.token,
+    GROUP_CONCAT(
+        CONCAT(a.attribute_name, ': ', pa.attribute_value) SEPARATOR ', '
+    ) AS attributes
+FROM teams t
+JOIN players p 
+    ON p.user_id = t.user_id
+LEFT JOIN (
+    SELECT token, attribute_id, attribute_value FROM player_attributes
+    UNION ALL
+    SELECT token, attribute_id, attribute_value FROM player_dynamic_attributes
+) pa 
+    ON p.token = pa.token
+LEFT JOIN attributes a 
+    ON pa.attribute_id = a.attribute_id
 WHERE
-    p.team_id = {team_id}
+    t.team_id = '{team_id}'
 GROUP BY
-    p.token
+    p.token;
+
+
 '''
 
 UPDATE_FRESHNESS_VALUE = '''
 UPDATE
-  player_freshness
+  player_dynamic_attributes
 SET
-  freshness = 100
+  attribute_value = attribute_value + {delta}
 WHERE
-  token = 'a0x24291884383d3fbe2bc74ae452d42cced24a85fc10'
+attribute_id = 15 
+AND  token = '{token}'
 '''
 SET_FRESHNESS_VALUE = '''
 UPDATE
-  player_freshness
+  player_dynamic_attributes
 SET
-  freshness = freshness {operator} {freshness_value}
+  attribute_value = attribute_value {operator} {freshness_value}
 WHERE
-  token = '{token}'
+attribute_id = 15 
+AND  token = '{token}'
 '''
 
 SELECT_FRESHNESS_VALUE = '''
 SELECT * 
-FROM player_freshness
+FROM   player_dynamic_attributes
 WHERE
-  token = '{token}'
+attribute_id = 15 
+AND  token = '{token}'
 '''
 INSERT_FRESHNESS_VALUE = '''
-INSERT INTO
-  player_freshness (
+INSERT INTO player_dynamic_attributes (
     token,
-    freshness,
-    last_update)
-VALUES
-  ('{token}', {freshness}, NOW());
+    attribute_id,
+    attribute_value,
+    last_update
+) VALUES
+    ('{token}', 15, {freshness}, NOW());
 '''
 _TEMPLATE_UPDATE_PLAYERS_ATTRIBUTES = '''
 SET
@@ -109,7 +132,7 @@ WHERE
 UPDATE
   player_attributes
 '''
-#'{"1": 8, "2": 6}'
+# '{"1": 8, "2": 6}'
 INSERT_IMPROVEMENT_MATCH_GAME_EFFECTED = '''
 INSERT INTO player_match_results (
     match_id,
@@ -130,7 +153,7 @@ VALUES
     ({training_id}, '{player_id}', '{improved_attributes}');
 '''
 
-_TEMPLATE_INSERT_IMPROVMENT_MATCH ='''
+_TEMPLATE_INSERT_IMPROVMENT_MATCH = '''
 UPDATE player_attributes
 SET attribute_value = attribute_value + {attr_delta},
     last_update = NOW()
@@ -138,60 +161,67 @@ WHERE token = '{player_id}' AND attribute_id = {attr_id} ;
 '''
 
 GET_PLAYER_BY_TOKEN = '''
-SELECT
-    p.token,
-    p.name,
-    p.birthday,
-    p.team_id,
-    p.status_id,
-    p.image_url,
-    p.opensea_url,
-    p.description,
-    p.last_update,
-    p.creation_date,
+SELECT 
+    p.*, 
     s.status_name,
-    GROUP_CONCAT(DISTINCT CONCAT(a.attribute_name, ': ', pa.attribute_value) ORDER BY a.attribute_id SEPARATOR ', ') AS attributes,
-    MAX(pf.freshness) AS Freshness
-FROM
-    players p
-LEFT JOIN
-    player_attributes pa ON p.token = pa.token
-LEFT JOIN
-    player_freshness pf ON p.token = pf.token
-LEFT JOIN
-    attributes a ON pa.attribute_id = a.attribute_id
-LEFT JOIN
-    statuses s ON p.status_id = s.status_id
-WHERE
-    p.token = '{token}'
-GROUP BY
-    p.token, p.name, p.birthday, p.team_id, p.status_id, p.image_url, 
-    p.opensea_url, p.description, p.last_update, p.creation_date, s.status_name
-ORDER BY
-    p.creation_date DESC, p.token;
+    CONCAT(
+        IFNULL(attr_static, ''), 
+        IF(attr_static IS NOT NULL AND attr_dynamic IS NOT NULL, ', ', ''), 
+        IFNULL(attr_dynamic, '')
+    ) AS attributes
+FROM players p
+LEFT JOIN statuses s ON p.status_id = s.status_id
+LEFT JOIN (
+    SELECT 
+        pa.token, 
+        GROUP_CONCAT(CONCAT(a.attribute_name, ': ', pa.attribute_value) SEPARATOR ', ') AS attr_static
+    FROM player_attributes pa
+    LEFT JOIN attributes a ON pa.attribute_id = a.attribute_id
+    GROUP BY pa.token
+) pa ON p.token = pa.token
+LEFT JOIN (
+    SELECT 
+        pda.token, 
+        GROUP_CONCAT(CONCAT(a.attribute_name, ': ', pda.attribute_value) SEPARATOR ', ') AS attr_dynamic
+    FROM player_dynamic_attributes pda
+    LEFT JOIN attributes a ON pda.attribute_id = a.attribute_id
+    GROUP BY pda.token
+) pda ON p.token = pda.token
+WHERE p.token = '{token}'
+GROUP BY p.token, s.status_name, pa.attr_static, pda.attr_dynamic
+ORDER BY p.status_id, p.creation_date DESC, p.player_id
 '''
 GET_ACCOUNT_PLAYERS = '''
-SELECT
-    p.*,s.status_name,
-    GROUP_CONCAT(CONCAT(a.attribute_name, ': ', pa.attribute_value) SEPARATOR ', ') AS attributes,freshness
-FROM
-    players p
-LEFT JOIN
-    player_attributes pa ON p.token = pa.token
-LEFT JOIN
-    attributes a ON pa.attribute_id = a.attribute_id
-LEFT JOIN
-    player_freshness pf ON p.token = pf.token
-LEFT JOIN
-    statuses s ON p.status_id = s.status_id
-WHERE
-    p.user_id = '{user_id}'
-GROUP BY
-    p.player_id
-ORDER BY
-    p.creation_date DESC, p.player_id;
+SELECT 
+    p.*, 
+    s.status_name,
+    CONCAT(
+        IFNULL(attr_static, ''), 
+        IF(attr_static IS NOT NULL AND attr_dynamic IS NOT NULL, ', ', ''), 
+        IFNULL(attr_dynamic, '')
+    ) AS attributes
+FROM players p
+LEFT JOIN statuses s ON p.status_id = s.status_id
+LEFT JOIN (
+    SELECT 
+        pa.token, 
+        GROUP_CONCAT(CONCAT(a.attribute_name, ': ', pa.attribute_value) SEPARATOR ', ') AS attr_static
+    FROM player_attributes pa
+    LEFT JOIN attributes a ON pa.attribute_id = a.attribute_id
+    GROUP BY pa.token
+) pa ON p.token = pa.token
+LEFT JOIN (
+    SELECT 
+        pda.token, 
+        GROUP_CONCAT(CONCAT(a.attribute_name, ': ', pda.attribute_value) SEPARATOR ', ') AS attr_dynamic
+    FROM player_dynamic_attributes pda
+    LEFT JOIN attributes a ON pda.attribute_id = a.attribute_id
+    GROUP BY pda.token
+) pda ON p.token = pda.token
+WHERE p.user_id = '{user_id}'
+GROUP BY p.token, s.status_name, pa.attr_static, pda.attr_dynamic
+ORDER BY p.status_id, p.creation_date DESC, p.player_id
 '''
-
 
 UPDATE_PLAYER_STATUS = '''
 UPDATE
@@ -250,7 +280,6 @@ WHERE
     team_id = {team_id} AND default_formation = 1
 '''
 
-
 UPDATE_PLAYERS_TEAM = '''
 UPDATE players
 SET team_id = {team_id}
@@ -279,6 +308,8 @@ SELECT
     leagues.match_day,
     leagues.match_hour,
     leagues.required_number_of_teams,
+    leagues.status_id,
+    statuses.status_name,
     COUNT(league_teams.team_id) AS team_count,
     MAX(CASE WHEN teams.user_id = '{user_id}' THEN teams.team_id ELSE NULL END) AS user_team_id
 FROM
@@ -287,17 +318,20 @@ LEFT JOIN
     league_teams ON leagues.league_id = league_teams.league_id
 LEFT JOIN
     teams ON league_teams.team_id = teams.team_id
+LEFT JOIN
+    statuses ON leagues.status_id = statuses.status_id
 GROUP BY
-    leagues.league_id
+    leagues.league_id, statuses.status_name
 ORDER BY
     MAX(teams.user_id = '{user_id}') DESC;
+
 '''
-SELECT_LEAGUE_TEAMS ='''
+SELECT_LEAGUE_TEAMS = '''
 SELECT team_id
 FROM league_teams
 WHERE league_id = {league_id};
 '''
-INSERT_JOIN_LEAGUE='''
+INSERT_JOIN_LEAGUE = '''
 INSERT INTO league_teams (league_id, team_id)
 VALUES ({league_id}, {team_id});
 '''
@@ -310,8 +344,7 @@ UPDATE_MATCH_RESULT = '''
 UPDATE
   matches
 SET
-    result = '{match_result}',
-    time_played_mins = '{time_played_mins}'
+  result = '{match_result}'
 WHERE
   match_id = {match_id};
 '''
@@ -324,7 +357,6 @@ SET
 WHERE
   match_id = {match_id};
 '''
-
 
 INSERT_INIT_MATCHES = '''
 INSERT INTO
@@ -391,7 +423,7 @@ ORDER BY
   ls.goal_difference DESC,
   ls.goals_scored DESC;
 '''
-SELECT_MATCHES_BY_LEAGUE_ID ='''
+SELECT_MATCHES_BY_LEAGUE_ID = '''
 SELECT 
     m.match_id,
     m.league_id,
@@ -425,7 +457,7 @@ WHERE
 ORDER BY 
     m.match_datetime ASC;
 '''
-GET_CURRENT_OR_NEXT_MATCH_DAY ='''
+GET_CURRENT_OR_NEXT_MATCH_DAY = '''
 SELECT
   match_day
 FROM
@@ -553,19 +585,32 @@ FROM training_intensities
 '''
 
 INSERT_TEAM_TRAINING = '''
-INSERT INTO
-  team_training ( team_id,
+INSERT INTO team_training (
+    team_id,
     training_type_id,
     intensity_id,
     participating_players,
     start_time,
     end_time,
-    creation_time)
-VALUES
-  ( {team_id},
+    creation_time
+)
+VALUES (
+    {team_id},
     {training_type_id},
     {intensity_id},
-    '{participating_players}', NOW(), DATE_ADD(NOW(), INTERVAL 1 DAY), NOW())
+    '{participating_players}', 
+    NOW(), 
+    DATE_ADD(NOW(), INTERVAL (
+        SELECT duration_minutes + recovery_minutes 
+        FROM training_intensities 
+        WHERE intensity_id = {intensity_id}
+    ) MINUTE), 
+    NOW()
+);
+'''
+SELECT_TRANING_INTENSITY = '''
+SELECT * 
+FROM training_intensities
 '''
 
 SELECT_TEAM_TRAINING_BY_ID = '''
@@ -652,7 +697,7 @@ SELECT
         WHEN um.seconds_until_next IS NOT NULL AND um.seconds_until_next < 108000 THEN 0   
         ELSE 1
     END AS IS_TRAINABLE,
-    
+
     CASE 
         WHEN tc.has_active_training > 0 THEN tc.seconds_until_training_ends  
         WHEN rm.seconds_since_last IS NOT NULL AND rm.seconds_since_last < 21600 THEN 21600 - rm.seconds_since_last
@@ -739,28 +784,23 @@ WHERE
 
 '''
 GET_TRAINABLE_PLAYERS = '''
-SELECT p.player_id, p.token, p.name
+SELECT DISTINCT p.token
 FROM players p
 JOIN teams t ON p.user_id = t.user_id 
 LEFT JOIN team_training tt 
     ON tt.team_id = t.team_id 
     AND tt.end_time > NOW()
     AND JSON_CONTAINS(tt.participating_players, JSON_QUOTE(p.token), '$') 
-LEFT JOIN matches m
-    ON (m.home_team_id = t.team_id OR m.away_team_id = t.team_id) 
-LEFT JOIN player_match_results pmr
-    ON pmr.match_id = m.match_id AND pmr.token = p.token 
-    WHERE t.team_id = {team_id}
-    AND (tt.participating_players IS NULL OR JSON_CONTAINS(tt.participating_players, JSON_QUOTE(p.token), '$') = 0)
-    AND (
-        pmr.match_id IS NULL 
-        OR NOT EXISTS ( 
-            SELECT 1 
-            FROM matches m2 
-            WHERE m2.match_id = pmr.match_id 
-            AND m2.match_datetime BETWEEN DATE_SUB(NOW(), INTERVAL 6 HOUR) AND NOW()
-        )
-    );
+LEFT JOIN (
+    SELECT pmr.token
+    FROM player_match_results pmr
+    JOIN matches m ON pmr.match_id = m.match_id
+    WHERE m.match_datetime BETWEEN DATE_SUB(NOW(), INTERVAL 6 HOUR) AND NOW()
+) recent_matches 
+ON recent_matches.token = p.token
+WHERE t.team_id = {team_id}
+AND (tt.participating_players IS NULL OR JSON_CONTAINS(tt.participating_players, JSON_QUOTE(p.token), '$') = 0)
+AND recent_matches.token IS NULL;
 
 '''
 SELECT_TRAINING_TEAM_HISTORY = '''
@@ -829,24 +869,72 @@ SELECT
     CASE
         WHEN (SELECT COUNT(*) FROM last_match WHERE result IS NULL) > 0
         THEN 'in_match'
-        
+
     WHEN (SELECT COUNT(*) FROM last_match WHERE NOW() < DATE_ADD(match_datetime, INTERVAL time_played_mins MINUTE)) > 0
     THEN 'in_training'
-    
+
     WHEN (SELECT COUNT(*) FROM last_training WHERE NOW() < DATE_ADD(start_time, INTERVAL duration_minutes MINUTE)) > 0
     THEN 'in_training'
-    
+
     ELSE 'last_effort'
 END AS status,
 
 CASE 
     WHEN (SELECT COUNT(*) FROM last_match WHERE result IS NULL) > 0
     THEN 'To be updated at the end of the match'
-    
+
     ELSE GREATEST(
         IFNULL((SELECT MAX(DATE_ADD(match_datetime, INTERVAL time_played_mins MINUTE)) FROM last_match), '0000-00-00 00:00:00'),
         IFNULL((SELECT MAX(DATE_ADD(start_time, INTERVAL duration_minutes MINUTE)) FROM last_training), '0000-00-00 00:00:00')
     )
 END AS last_effort_time;
+
+'''
+SELECT_CURRWNT_TRAINING = '''
+SELECT 
+tt.training_id,
+tt.start_time,
+tt.end_time,
+tt.training_type_id,
+tt.intensity_id,
+tt.participating_players,
+tt.creation_time,
+JSON_ARRAYAGG(
+JSON_OBJECT('token', p.token,'name', p.name,'image_url', p.image_url)
+) AS players
+FROM team_training tt
+LEFT JOIN JSON_TABLE(
+tt.participating_players COLLATE utf8mb4_general_ci, 
+'$[*]' COLUMNS (token VARCHAR(255) PATH '$')
+) jt ON jt.token IS NOT NULL
+LEFT JOIN players p 
+ON p.token COLLATE utf8mb4_general_ci = jt.token COLLATE utf8mb4_general_ci
+WHERE tt.team_id = {team_id}
+AND tt.start_time <= NOW() 
+AND tt.end_time > NOW()
+GROUP BY tt.training_id;
+'''
+GET_BEST_PLAYER_BY_LEAGUE = '''
+SELECT 
+    a.action_name, 
+    p.name AS player_name, 
+    p.image_url AS player_image, 
+    COALESCE(t.team_name, ut.team_name) AS team_name, 
+    COALESCE(t.logo_url, ut.logo_url) AS team_image, 
+    COUNT(md.action_id) AS action_count
+FROM match_details md
+JOIN matches m ON md.match_id = m.match_id
+JOIN actions a ON md.action_id = a.action_id
+JOIN players p ON md.token = p.token
+LEFT JOIN teams t ON p.team_id = t.team_id 
+LEFT JOIN users u ON p.user_id = u.user_id  
+LEFT JOIN teams ut ON u.user_id = ut.user_id  
+WHERE m.league_id = {league_id}
+AND a.action_id IN (1, 2, 7,8)  
+GROUP BY a.action_name, p.name, p.image_url, COALESCE(t.team_name, ut.team_name), COALESCE(t.logo_url, ut.logo_url)
+ORDER BY a.action_name ASC, action_count DESC;
+
+'''
+GET_CURRENT_TRAINING_BY_TEAM = '''
 
 '''
