@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from random import choice, sample
-from backend import SQL_db  as sql_db
+import Helpers.SQL_db as sql_db
 import logging
 import ast
 # Configure logging
