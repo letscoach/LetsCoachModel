@@ -17,3 +17,6 @@ steps:
 
 images:
   - 'gcr.io/$PROJECT_ID/letcoach-model:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
