@@ -73,7 +73,7 @@ def complete_training(session_id):
         attr_dict = {key.strip(): float(value.strip()) for key, value in
                      (item.split(":") for item in attr_str.split(","))}
         base_improvement = {"Light": 0.005, "Medium": 0.008, "Intense": 0.012}[intensity_level]
-        actual_improvement = base_improvement * (attr_dict["Trainability"] / 100) * (player_data["Freshness"] / 100)
+        actual_improvement = base_improvement * (attr_dict["Trainability"] / 100) * (player_data['properties']["Freshness"] / 100)
 
         for attribute in impacted_attributes:
             properties[attribute] = actual_improvement

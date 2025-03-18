@@ -205,7 +205,7 @@ def insert_player_attributes_training_effected(players_data, training_id):
         frsheness_attr = player['properties'].get('Freshness')
         if frsheness_attr:
             del player['properties']['Freshness']
-            set_player_freshness(frsheness_attr,'-',player['player_id'])
+            set_player_freshness(frsheness_attr,'+',player['player_id'])
         attributes = {f"{ATTR.get(k, k)}": v for k, v in player['properties'].items()}
         query = query.format(training_id=training_id, player_id=player['player_id'],
                              improved_attributes=str(attributes).replace("'", '"'))
