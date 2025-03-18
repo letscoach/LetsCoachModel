@@ -90,6 +90,7 @@ def complete_training(session_id):
     try:
         sql_db.insert_player_attributes_training_effected(players_data, session_id)
         logging.info(f"Training effects successfully inserted for session {session_id}")
+        return {'status' : 'success'}
     except Exception as e:
         logging.error(f"Error inserting training effects for session {session_id}: {e}")
         return {"error": "Database update failed"}
