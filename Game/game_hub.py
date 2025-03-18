@@ -1,8 +1,6 @@
 import json
 from typing import List, Dict, Tuple
 import logging
-#from backend import firebase_db as db
-#from backend import mock_db as db
 from Helpers import SQL_db as db
 from Game.game_model import simulate_football_match
 from Game.formation_grader import calc_grades, create_formation_from_list

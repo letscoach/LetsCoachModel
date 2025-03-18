@@ -3,6 +3,9 @@ from random import choice, sample
 import Helpers.SQL_db as sql_db
 import logging
 import ast
+
+from Helpers.telegram_manager import send_log_message
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -44,14 +47,14 @@ def get_training_attributes(training_type):
 
 def complete_training(session_id):
     logging.info(f"Starting training session {session_id}")
-
+    send_log_message(f"Starting training session {session_id}")
     # Fetch training session details from DB
     session = sql_db.get_team_training_by_id(session_id)
     team_id = session[0]['team_id']
     training_type = session[0]['training_name']
     intensity_level = session[0]['intensity_name']
     logging.info(f"Training session {session_id}: Team {team_id}, Type {training_type}, Intensity {intensity_level}")
-
+    send_log_message(f"Training session {session_id}: Team {team_id}, Type {training_type}, Intensity {intensity_level}")
     # Fetch affected players and attributes
     players_str = session[0]['participating_players']
     players = ast.literal_eval(players_str)
@@ -90,6 +93,7 @@ def complete_training(session_id):
     try:
         sql_db.insert_player_attributes_training_effected(players_data, session_id)
         logging.info(f"Training effects successfully inserted for session {session_id}")
+        send_log_message(f"Training effects successfully inserted for session {session_id}")
         return {'status' : 'success'}
     except Exception as e:
         logging.error(f"Error inserting training effects for session {session_id}: {e}")
