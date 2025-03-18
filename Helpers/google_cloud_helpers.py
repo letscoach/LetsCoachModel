@@ -48,4 +48,3 @@ def create_task_for_match(data):
     response = requests.request("POST", url, headers=headers, data=payload)
     return response
 
-create_task_for_match( { "match_id": 259, "home_team_id": 67, "away_team_id": 74 , "match_datetime" : datetime.now()})
