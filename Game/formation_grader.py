@@ -230,8 +230,13 @@ def calculate_team_grades(formation: Formation) -> Tuple[float, float, float]:
                      f"Defense Grade: {defense_grade}, Midfield Grade: {midfield_grade}, Offense Grade: {offense_grade}")
 
         # Calculate freshness correction
-        freshness_correction = player.properties["Freshness"] / 100
-        logger.debug(f"Freshness for player {player.position}: {player.properties['Freshness']}, "
+        properties_str = player.properties['attributes']
+        # Convert to dictionary - AMICHAY - can you return a doctionary?
+        prop_dict = {key.strip(): float(value.strip()) for key, value in
+                     (item.split(":") for item in properties_str.split(","))}
+
+        freshness_correction = prop_dict["Freshness"] / 100
+        logger.debug(f"Freshness for player {player.position}: {prop_dict['Freshness']}, "
                      f"Freshness Correction: {freshness_correction}")
 
         # Calculate and log the product and updated totals for each category
