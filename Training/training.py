@@ -12,10 +12,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 def get_training_attributes(training_type):
     # Define training types and their corresponding attributes
     training_attributes = {
-        "Attack Training": ["Shoot Precision", "Shoot Power", "Heading"],
-        "Defense Training": ["Heading", "Aggression", "Tackle Precision"],
-        "Midfield Training": ["Dribble", "Game Vision", "Pass Precision"],
-        "Personal Skills Training": ["Speed", "Endurance", "Leadership", "Physicality", "Injury Risk"],
+        "Attack Training": ["Shoot_Precision", "Shoot_Power", "Heading"],
+        "Defense Training": ["Heading", "Aggression", "Tackle_Precision"],
+        "Midfield Training": ["Dribble", "Game_vision", "Pass_Precision"],
+        "Personal Skills Training": ["Speed", "Endurance", "Leadership", "Physicality", "Injury_Risk"],
         "Recovery Training": ["Freshness"],
     }
 
