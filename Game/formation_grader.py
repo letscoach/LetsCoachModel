@@ -239,10 +239,15 @@ def calculate_team_grades(formation: Formation) -> Tuple[float, float, float]:
         logger.debug(f"Freshness for player {player.position}: {prop_dict['Freshness']}, "
                      f"Freshness Correction: {freshness_correction}")
 
+        satisfaction_correction = (((prop_dict["Morale"]/100) * 8) - 4) / 100 + 1
+        logger.debug(f"Freshness for player {player.position}: {prop_dict['Freshness']}, "
+                     f"Freshness Correction: {freshness_correction}")
+
+
         # Calculate and log the product and updated totals for each category
-        defense_product = freshness_correction * defense_grade * POSITION_FACTORS["defense"][pos_index]
-        midfield_product = freshness_correction * midfield_grade * POSITION_FACTORS["midfield"][pos_index]
-        offense_product = freshness_correction * offense_grade * POSITION_FACTORS["offense"][pos_index]
+        defense_product = satisfaction_correction * freshness_correction * defense_grade * POSITION_FACTORS["defense"][pos_index]
+        midfield_product = satisfaction_correction * freshness_correction * midfield_grade * POSITION_FACTORS["midfield"][pos_index]
+        offense_product = satisfaction_correction * freshness_correction * offense_grade * POSITION_FACTORS["offense"][pos_index]
 
 
         logger.debug(f"Calculated product for defense: {defense_product}, "
