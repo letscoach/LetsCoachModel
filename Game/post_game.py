@@ -95,8 +95,13 @@ class SatisfactionCalculator:
             #    satisfaction_change -= 2
 
             # Apply changes to player
-            player_result["satisfaction_delta"] = satisfaction_change
+            player_result['performance']["satisfaction_delta"] = satisfaction_change
 
+    @staticmethod
+    def satisfaction_change_for_non_players(non_players):
+        non_players_satisfaction_change = 2
+        for player in non_players:
+            db.set_player_freshness(non_players_satisfaction_change, '-',player)
 
 
 def calculate_player_score(player, player_story, team_score, opponent_score, team_won):
@@ -371,8 +376,26 @@ class PostGameProcessor:
         team1_formation = self.get_team_formation(team1_id)
         team2_formation = self.get_team_formation(team2_id)
 
+        team1_total = db.get_team_players(team1_id)
+        team2_total = db.get_team_players(team2_id)
+
+
         team1_players = self.fetch_player_data(team1_formation)
         team2_players = self.fetch_player_data(team2_formation)
+
+        # Extract player IDs from the dictionary keys
+        team1_total_keys = set(team1_total.keys())
+        team2_total_keys = set(team2_total.keys())
+
+        # Extract player IDs from the list
+        team1_player_ids = set(player['player_id'] for player in team1_players)
+        team2_player_ids = set(player['player_id'] for player in team2_players)
+
+        # Find player IDs that are in the dictionary but not in the list
+        team1_non_players = list(team1_total_keys - team1_player_ids)
+        team2_non_players = list(team2_total_keys - team2_player_ids)
+
+        non_players = team1_non_players + team2_non_players
 
         list(map(lambda x: x.update({'team_id': team1_id}), team1_players))
         list(map(lambda x: x.update({'team_id': team2_id}), team2_players))
@@ -423,6 +446,7 @@ class PostGameProcessor:
             })
         SatisfactionCalculator.calculate_satisfaction_changes(results, team1_score, team2_score)
 
+        SatisfactionCalculator.satisfaction_change_for_non_players(non_players)
         return {
             "result": {"team1_score": team1_score, "team2_score": team2_score},
             "time_played_mins": 90,

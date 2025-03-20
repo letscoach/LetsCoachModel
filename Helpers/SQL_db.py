@@ -25,7 +25,7 @@ def connect_with_connector() -> sqlalchemy.engine.base.Engine:
     ip_type = IPTypes.PUBLIC  # Choose PUBLIC or PRIVATE depending on your configuration
 
     # Path to your service account key JSON file
-    credentials_path = os.path.join('Helpers', "sql_cred.json")
+    credentials_path = os.path.join("../Helpers/sql_cred.json")
 
     # Load credentials manually
     try:
@@ -117,6 +117,10 @@ def update_player_freshness(token, freshness):
     exec_update_query(query)
 def set_player_freshness(freshness_delta, operator ,token):
     query = sql_queries.SET_FRESHNESS_VALUE.format(token=token, freshness_value=freshness_delta, operator = operator)
+    exec_update_query(query)
+
+def set_player_satisfaction(sat_delta, operator ,token):
+    query = sql_queries.SET_SATISFACTION_VALUE.format(token=token, satisfaction_value= sat_delta, operator = operator)
     exec_update_query(query)
 
 def select_player_freshness(token):

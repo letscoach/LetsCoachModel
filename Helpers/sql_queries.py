@@ -107,6 +107,16 @@ attribute_id = 15
 AND  token = '{token}'
 '''
 
+SET_SATISFACTION_VALUE = '''
+UPDATE
+  player_dynamic_attributes
+SET
+  attribute_value = attribute_value {operator} {satisfaction_value}
+WHERE
+attribute_id = 22 
+AND  token = '{token}'
+'''
+
 SELECT_FRESHNESS_VALUE = '''
 SELECT * 
 FROM   player_dynamic_attributes
