@@ -25,7 +25,7 @@ def connect_with_connector() -> sqlalchemy.engine.base.Engine:
     ip_type = IPTypes.PUBLIC  # Choose PUBLIC or PRIVATE depending on your configuration
 
     # Path to your service account key JSON file
-    credentials_path = os.path.join("../Helpers/sql_cred.json")
+    credentials_path = os.path.join('Helpers', "sql_cred.json")
 
     # Load credentials manually
     try:
