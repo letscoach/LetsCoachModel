@@ -33,5 +33,6 @@ def LetscoachModel():
 # generate_schedule_double_round(4,'11.03.2025', 1)
 
 if __name__ == "__main__":
+    # "trigger"
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
