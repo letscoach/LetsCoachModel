@@ -9,7 +9,7 @@ def fetch_player_data(player_id):
     """
     freshness = sql_db.select_player_freshness(player_id)
     last_update = sql_db.get_freshness_last_effort(player_id)
-    current_freshness = freshness['freshness']
+    current_freshness = freshness['attribute_value']
     data = sql_db.get_player_by_token(player_id)
     attr_str = data['attributes']
     # Convert to dictionary - AMICHAY - can you return a doctionary?
