@@ -24,6 +24,86 @@ class EventLogger:
         return sorted(self.events, key=lambda x: (x["minute"], x["second"]))
 
 
+class SatisfactionCalculator:
+    @staticmethod
+    def calculate_satisfaction_changes(results, team1_score, team2_score):
+        """
+        Calculates the satisfaction change for each player based on playing time, match result, and personal performance.
+        """
+        satisfaction_changes = {}
+        team_won = team1_score > team2_score
+        team_lost = team1_score < team2_score
+        is_draw = team1_score == team2_score
+        goal_difference = abs(team1_score - team2_score)
+
+        for player_result in results:
+            #player = player_result["player_data"]
+            player_id = player_result["player_id"]
+            minutes_played = 90#player_result.get("minutes_played", 0)
+            satisfaction_change = 0
+
+            # Playing Time Impact
+            if minutes_played >= 72:  # 80% of 90 minutes
+                satisfaction_change += 4
+            elif 36 <= minutes_played < 72:  # 40%-79%
+                satisfaction_change += 2
+            elif 1 <= minutes_played < 36:  # 1%-39%
+                satisfaction_change += 0
+            elif minutes_played == 0:  # Did not play
+                satisfaction_change -= 2
+
+            # Match Result Impact
+            if team_won:
+                if minutes_played > 45:
+                    satisfaction_change += 4
+                else:
+                    satisfaction_change += 2
+            elif is_draw:
+                if minutes_played > 45:
+                    satisfaction_change += 2
+            elif team_lost:
+                if minutes_played > 45:
+                    satisfaction_change -= 4
+                else:
+                    satisfaction_change -= 2
+
+            # Special Adjustments: Win/Loss by 3+ goals
+            if team_won and goal_difference >= 3:
+                if minutes_played > 0:
+                    satisfaction_change += 2
+            elif team_lost and goal_difference >= 3:
+                if minutes_played > 0:
+                    satisfaction_change -= 2
+
+            # Performance Impact
+            #if player_result["performance"].get("man_of_the_match", False):
+            #    satisfaction_change += 4
+            if player_result["performance"].get("scored_goal", 0) > 0:
+                satisfaction_change += 2 * player_result["performance"]["scored_goal"]
+            if player_result["performance"].get("assist", 0) > 0:
+                satisfaction_change += 2 * player_result["performance"]["assist"]
+            #if player_result["performance"].get("punished", False):
+            #    satisfaction_change -= 2
+            #if player_result["performance"].get("conceded_penalty", False):
+            #    satisfaction_change -= 2
+
+            # Training and Improvement Impact
+            if player_result["performance"].get("attribute_deltas", False):
+                satisfaction_change += 4
+            #todo: calculate stagnation...
+            #if player_result["performance"].get("stagnation", False):
+            #    satisfaction_change -= 2
+
+            # Apply changes to player
+            player_result['performance']["satisfaction_delta"] = satisfaction_change
+
+    @staticmethod
+    def satisfaction_change_for_non_players(non_players):
+        non_players_satisfaction_change = 2
+        for player in non_players:
+            db.set_player_freshness(non_players_satisfaction_change, '-',player)
+
+
 def calculate_player_score(player, player_story, team_score, opponent_score, team_won):
     baseline_score = random.uniform(2.5, 3.5)
 
@@ -296,8 +376,26 @@ class PostGameProcessor:
         team1_formation = self.get_team_formation(team1_id)
         team2_formation = self.get_team_formation(team2_id)
 
+        team1_total = db.get_team_players(team1_id)
+        team2_total = db.get_team_players(team2_id)
+
+
         team1_players = self.fetch_player_data(team1_formation)
         team2_players = self.fetch_player_data(team2_formation)
+
+        # Extract player IDs from the dictionary keys
+        team1_total_keys = set(team1_total.keys())
+        team2_total_keys = set(team2_total.keys())
+
+        # Extract player IDs from the list
+        team1_player_ids = set(player['player_id'] for player in team1_players)
+        team2_player_ids = set(player['player_id'] for player in team2_players)
+
+        # Find player IDs that are in the dictionary but not in the list
+        team1_non_players = list(team1_total_keys - team1_player_ids)
+        team2_non_players = list(team2_total_keys - team2_player_ids)
+
+        non_players = team1_non_players + team2_non_players
 
         list(map(lambda x: x.update({'team_id': team1_id}), team1_players))
         list(map(lambda x: x.update({'team_id': team2_id}), team2_players))
@@ -327,7 +425,6 @@ class PostGameProcessor:
             )
 
             attribute_updates = self.random_attribute_updates(player, team_won)
-
             results.append({
                 "player_id": player["player_id"],
                 "player_data": player["name"],
@@ -347,7 +444,9 @@ class PostGameProcessor:
                     "freshness_delta": -self.calculate_freshness_drop(player['properties']['Endurance']),
                 }
             })
+        SatisfactionCalculator.calculate_satisfaction_changes(results, team1_score, team2_score)
 
+        SatisfactionCalculator.satisfaction_change_for_non_players(non_players)
         return {
             "result": {"team1_score": team1_score, "team2_score": team2_score},
             "time_played_mins": 90,
