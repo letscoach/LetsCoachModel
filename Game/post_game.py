@@ -26,17 +26,21 @@ class EventLogger:
 
 class SatisfactionCalculator:
     @staticmethod
-    def calculate_satisfaction_changes(results, team1_score, team2_score):
+    def calculate_satisfaction_changes(results, team1_score, team2_score, man_of_the_match):
         """
         Calculates the satisfaction change for each player based on playing time, match result, and personal performance.
         """
         satisfaction_changes = {}
-        team_won = team1_score > team2_score
-        team_lost = team1_score < team2_score
         is_draw = team1_score == team2_score
         goal_difference = abs(team1_score - team2_score)
 
         for player_result in results:
+            if (player_result['performance']["team_won"]):
+                team_won = True
+                team_lost = False
+            else:
+                team_won = False
+                team_lost = True
             #player = player_result["player_data"]
             player_id = player_result["player_id"]
             minutes_played = 90#player_result.get("minutes_played", 0)
@@ -76,8 +80,8 @@ class SatisfactionCalculator:
                     satisfaction_change -= 2
 
             # Performance Impact
-            #if player_result["performance"].get("man_of_the_match", False):
-            #    satisfaction_change += 4
+            if player_id == "man_of_the_match":
+                satisfaction_change += 4
             if player_result["performance"].get("scored_goal", 0) > 0:
                 satisfaction_change += 2 * player_result["performance"]["scored_goal"]
             if player_result["performance"].get("assist", 0) > 0:
@@ -361,6 +365,8 @@ class PostGameProcessor:
 
     def generate_player_stories(self, all_players):
         player_stories = []
+        man_of_the_match = ''
+        man_of_the_match_score = 0
         for player in all_players:
             player_stories.append({
                 "player_id": player['player_id'],
@@ -370,7 +376,11 @@ class PostGameProcessor:
                 "injured": False,
                 "punished": player.get("punished", False)
             })
-        return player_stories
+            personal_score = 5 * player.get("scored_goal", 0) + 3 * (player.get("assist", 0) + player.get("defense_action", 0))
+            if (personal_score > man_of_the_match_score):
+                man_of_the_match_score = personal_score
+                man_of_the_match = player['player_id']
+        return player_stories , man_of_the_match
 
     def process_post_game(self, team1_id, team2_id, team1_score, team2_score):
         team1_formation = self.get_team_formation(team1_id)
@@ -416,7 +426,7 @@ class PostGameProcessor:
             event_logger
         )
 
-        player_stories = self.generate_player_stories(all_players)
+        player_stories, man_of_the_match = self.generate_player_stories(all_players)
 
         results = []
         for player, story in zip(all_players, player_stories):
@@ -435,6 +445,7 @@ class PostGameProcessor:
                         opponent_score=team2_score if player in team1_players else team1_score,
                         team_won=team_won
                     ),
+                    "team_won": team_won,
                     "scored_goal": story.get("scored_goal", 0),
                     "assist": story.get("assist", 0),
                     "defense_action": story.get("defense_action", 0),
@@ -444,12 +455,13 @@ class PostGameProcessor:
                     "freshness_delta": -self.calculate_freshness_drop(player['properties']['Endurance']),
                 }
             })
-        SatisfactionCalculator.calculate_satisfaction_changes(results, team1_score, team2_score)
+        SatisfactionCalculator.calculate_satisfaction_changes(results, team1_score, team2_score, man_of_the_match)
 
         SatisfactionCalculator.satisfaction_change_for_non_players(non_players)
         return {
             "result": {"team1_score": team1_score, "team2_score": team2_score},
             "time_played_mins": 90,
             "player_stories": results,
+            "man_of_the_match": man_of_the_match,
             "events": event_logger.get_events()
         }
