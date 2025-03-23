@@ -239,7 +239,7 @@ def calculate_team_grades(formation: Formation) -> Tuple[float, float, float]:
         logger.debug(f"Freshness for player {player.position}: {prop_dict['Freshness']}, "
                      f"Freshness Correction: {freshness_correction}")
 
-        satisfaction_correction = (((prop_dict["Morale"]/100) * 8) - 4) / 100 + 1
+        satisfaction_correction = (((prop_dict["Satisfaction"]/100) * 8) - 4) / 100 + 1
         logger.debug(f"Freshness for player {player.position}: {prop_dict['Freshness']}, "
                      f"Freshness Correction: {freshness_correction}")
 
