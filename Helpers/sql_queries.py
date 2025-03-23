@@ -948,3 +948,19 @@ ORDER BY a.action_name ASC, action_count DESC;
 GET_CURRENT_TRAINING_BY_TEAM = '''
 
 '''
+
+
+SELECT_PLAYERS_TARINING_HISTORY_BY_TEAM_ID = '''
+SELECT 
+    p.token,
+    MAX(tt.end_time) AS last_training_date,
+    COUNT(CASE WHEN tt.intensity_id = 3 AND tt.start_time >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 END) AS hard_trainings_last_7_days
+FROM 
+    team_training tt
+JOIN 
+    players p ON JSON_CONTAINS(tt.participating_players, JSON_QUOTE(p.token), '$')
+WHERE 
+    tt.team_id = {team_id}
+GROUP BY 
+    p.token;
+'''

@@ -60,6 +60,8 @@ def complete_training(session_id):
     players = ast.literal_eval(players_str)
     affected_attributes = get_training_attributes(training_type)
 
+    conseq_hard = sql_db.get_training_history_by_team_id(team_id)
+
     # Dictionary to store improvements for each player
     players_data = {}
 
@@ -81,6 +83,11 @@ def complete_training(session_id):
         # Reduce fatigue
         fatigue_reduction = 25 - (attr_dict['Endurance'] / 4) + {"Light": 0, "Medium": 2, "Intense": 5}[intensity_level]
         properties["Freshness"] = -fatigue_reduction #min(100, player["Freshness"] - fatigue_reduction)
+
+        if intensity_level == 'Intense':
+            for hard_trained_player in conseq_hard:
+                if hard_trained_player['token'] == player and hard_trained_player['hard_trainings_last_7_days'] > 3:
+                    properties["Satisfaction"] = -2
 
         players_data[player] = {
             "player_id": player,
@@ -123,4 +130,4 @@ def get_fatigue_reduction(endurance, intensity):
 #    injury_probability *= 3
 #else:
 #    injury_probability *= 4
-#complete_training(13)
+complete_training(80)

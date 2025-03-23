@@ -210,6 +210,12 @@ def insert_player_attributes_training_effected(players_data, training_id):
         if frsheness_attr:
             del player['properties']['Freshness']
             set_player_freshness(frsheness_attr,'+',player['player_id'])
+
+        satisfaction_attr = player['properties'].get('Satisfaction')
+        if satisfaction_attr:
+            del player['properties']['Satisfaction']
+            set_player_satisfaction(satisfaction_attr,'+',player['player_id'])
+
         attributes = {f"{ATTR.get(k, k)}": v for k, v in player['properties'].items()}
         query = query.format(training_id=training_id, player_id=player['player_id'],
                              improved_attributes=str(attributes).replace("'", '"'))
@@ -533,6 +539,13 @@ def get_freshness_last_effort(token):
     return len(data) > 0 and [x._asdict() for x in data][0] or {}
 # get_freshness_last_effort("a0x24291884383d3fbe2bc74ae452d42cced24a85fc24")
 
+def get_training_history_by_team_id(team_id):
+    query = sql_queries.SELECT_PLAYERS_TARINING_HISTORY_BY_TEAM_ID.format(team_id = team_id)
+    data = exec_select_query(query)
+    data =  [x._asdict() for x in data]
+    # for d in data:
+    #     d['players'] = json.loads(d['players'])
+    return data
 
 def init_mock_db():
     return None
