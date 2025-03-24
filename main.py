@@ -5,6 +5,7 @@ from Helpers.telegram_manager import send_log_message
 from flask import Flask, jsonify, request
 
 from Game.freshness_update import update_freshness_for_team
+from Game.update_satisfaction import update_satisfaction_for_team
 from Training.training import complete_training
 
 app = Flask(__name__)
@@ -21,6 +22,7 @@ def LetscoachModel():
             res = complete_training(request_json.get('training_id'))
         if request_json.get('type') == 'freshness_update':
             res = update_freshness_for_team(request_json.get('team_id'))
+            res = update_satisfaction_for_team(request_json.get('team_id'))
         else:
             away_team_id = request_json.get('away_team_id')
             home_team_id = request_json.get('home_team_id')
