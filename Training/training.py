@@ -69,11 +69,11 @@ def complete_training(session_id):
         impacted_attributes = sample(affected_attributes, k=choice([1, 2]))
         properties = {}
         player_data = sql_db.get_player_by_token(player)
-        attr_str = player_data['attributes']
+        attr_dict = player_data['properties']
 
-        # Convert to dictionary - AMICHAi - can you return a doctionary?
-        attr_dict = {key.strip(): float(value.strip()) for key, value in
-                     (item.split(":") for item in attr_str.split(","))}
+        # DONE Convert to dictionary - AMICHAi - can you return a doctionary?
+        # attr_dict = {key.strip(): float(value.strip()) for key, value in
+        #              (item.split(":") for item in attr_str.split(","))}
         base_improvement = {"Light": 0.005, "Medium": 0.008, "Intense": 0.012}[intensity_level]
         actual_improvement = base_improvement * (attr_dict["Trainability"] / 100) * (player_data['properties']["Freshness"] / 100)
 

@@ -25,7 +25,7 @@ def connect_with_connector() -> sqlalchemy.engine.base.Engine:
     ip_type = IPTypes.PUBLIC  # Choose PUBLIC or PRIVATE depending on your configuration
 
     # Path to your service account key JSON file
-    credentials_path = os.path.join('Helpers', "sql_cred.json")
+    credentials_path = os.path.join(os.path.dirname(__file__), "sql_cred.json")
 
     # Load credentials manually
     try:
@@ -111,6 +111,15 @@ def exec_update_query(query):
             return result
     except Exception as e:
         raise e
+
+def set_attributes_dict():
+    query = 'SELECT * FROM attributes'
+    data = exec_select_query(query)
+    data = [x._asdict() for x in data]
+    ATTR = {x['attribute_name'] : x['attribute_id'] for x in data}
+    ATTR_REVERS =  {str(v): k for k, v in ATTR.items()}
+
+set_attributes_dict()
 
 def update_player_freshness(token, freshness):
     query = sql_queries.UPDATE_FRESHNESS_VALUE.format(token=token, freshness_value=freshness)

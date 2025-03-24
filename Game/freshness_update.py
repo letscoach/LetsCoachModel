@@ -11,10 +11,10 @@ def fetch_player_data(player_id):
     last_update = sql_db.get_freshness_last_effort(player_id)
     current_freshness = freshness['attribute_value']
     data = sql_db.get_player_by_token(player_id)
-    attr_str = data['attributes']
-    # Convert to dictionary - AMICHAY - can you return a doctionary?
-    attr_dict = {key.strip(): float(value.strip()) for key, value in
-                 (item.split(":") for item in attr_str.split(","))}
+    attr_dict = data['properties']
+    # DONE Convert to dictionary - AMICHAY - can you return a doctionary?
+    # attr_dict = {key.strip(): float(value.strip()) for key, value in
+    #              (item.split(":") for item in attr_str.split(","))}
     endurance = attr_dict['Endurance']
     return last_update, current_freshness, endurance
 

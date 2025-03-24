@@ -48,24 +48,5 @@ tables = {
     ]
 
 }
-
-ATTRIBUTES = {
-    "Dribble": 1,
-    "Trainability": 2,
-    "Tackle_Precision": 3,
-    "Heading": 4,
-    "Aggression": 5,
-    "Pass_Precision": 6,
-    "Injury_Risk": 7,
-    "Leadership": 8,
-    "Shoot_Precision": 9,
-    "GK_Kicking": 10,
-    "Physicality": 11,
-    "Endurance": 12,
-    "Speed": 13,
-    "Reflexes": 14,
-    "Game_vision": 16,
-    "Diving": 17,
-    "Shoot_Power": 18
-}
-ATTR_REVERS = {str(v): k for k, v in ATTRIBUTES.items()}
+ATTRIBUTES = {}
+ATTR_REVERS = {}
