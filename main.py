@@ -4,7 +4,7 @@ from Game.Matches import game_launcher, generate_schedule_double_round
 from Helpers.telegram_manager import send_log_message
 from flask import Flask, jsonify, request
 
-from LetsCoachModel.Game.freshness_update import update_freshness_for_team
+from Game.freshness_update import update_freshness_for_team
 from Training.training import complete_training
 
 app = Flask(__name__)
@@ -36,5 +36,5 @@ def LetscoachModel():
 # generate_schedule_double_round(4,'11.03.2025', 1)
 
 if __name__ == "__main__":
-    port = int(8080)
+    port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
