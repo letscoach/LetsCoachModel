@@ -130,4 +130,3 @@ def get_fatigue_reduction(endurance, intensity):
 #    injury_probability *= 3
 #else:
 #    injury_probability *= 4
-complete_training(80)
