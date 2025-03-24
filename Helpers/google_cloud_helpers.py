@@ -14,7 +14,7 @@ from datetime import datetime, timedelta, timezone
 
 def create_task_for_match(data):
 
-    CLIENT_SECRET_FILE = os.path.join('Helpers', "google_api_cred.json")
+    CLIENT_SECRET_FILE = os.path.join(os.path.dirname(__file__), "google_api_cred.json")
     scopes = ['https://www.googleapis.com/auth/cloud-platform']
     credentials, project = google.auth.load_credentials_from_file(CLIENT_SECRET_FILE, scopes=scopes)
     if credentials.expired or not credentials.valid:

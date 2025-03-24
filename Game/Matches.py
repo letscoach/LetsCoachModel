@@ -153,23 +153,39 @@ def get_current_matches():
 
         # thread = threading.Thread(target=game_launcher, args=(match,))
         # thread.start()
-def generate_schedule_double_round(league_id, start_date, days_between_matchdays=7):
+
+#get_current_matches()
+def generate_schedule_double_round(league_id, start_date, start_hour_gmt, days_between_matchdays=7,
+                                   matches_per_day_interval=1):
     """
-    Generates a double-round (home & away) schedule.
+    Generates a double-round (home & away) schedule with flexible match scheduling.
 
     :param league_id: ID of the league for which schedule is generated
     :param start_date: "dd.mm.yyyy" string for the first matchday
+    :param start_hour_gmt: Starting hour in GMT (0-23)
     :param days_between_matchdays: number of days between consecutive matchdays
+    :param matches_per_day_interval: hours between matches on the same day
     :return: Combined schedule of both rounds
     """
 
+    # Validate input parameters
+    if days_between_matchdays < 0:
+        raise ValueError("days_between_matchdays must be non-negative")
+
+    if not (0 <= start_hour_gmt <= 23):
+        raise ValueError("start_hour_gmt must be between 0 and 23")
+
+    if matches_per_day_interval <= 0:
+        raise ValueError("matches_per_day_interval must be positive")
+
     # 1) Fetch teams from your DB
-    telegram.send_log_message(f'Starting to build your league! date : {start_date}')
+    telegram.send_log_message(
+        f'Starting to build your league! date: {start_date}, GMT hour: {start_hour_gmt}, Days between matchdays: {days_between_matchdays}')
     team_leagues = sql_db.select_league_teams(league_id)
     num_teams = len(team_leagues)
 
-    # 2) Convert start_date string to datetime object
-    start_dt = datetime.strptime(start_date, "%d.%m.%Y")
+    # 2) Convert start_date string to datetime object with specified GMT hour
+    start_dt = datetime.strptime(start_date, "%d.%m.%Y").replace(hour=start_hour_gmt, minute=0, second=0, microsecond=0)
 
     # The single round schedule
     schedule_first_round = []
@@ -181,31 +197,35 @@ def generate_schedule_double_round(league_id, start_date, days_between_matchdays
     # Generate the FIRST ROUND
     # ---------------------------
     for round_idx in range(total_matchdays):
-        # Calculate the date for this round (using days_between_matchdays)
+        # Calculate the base date for this round
+        # Use days_between_matchdays, which can be fractional
         round_date = start_dt + timedelta(days=round_idx * days_between_matchdays)
 
         matches_for_round = []
 
         # Generate pairings for the day:
-        for i in range(num_teams // 2):
-            # Optionally alternate home/away based on parity
-            if (round_idx + i) % 2 == 0:
-                home_team = team_leagues[i]
-                away_team = team_leagues[num_teams - 1 - i]
+        for match_idx in range(num_teams // 2):
+            # Alternate home/away based on parity
+            if (round_idx + match_idx) % 2 == 0:
+                home_team = team_leagues[match_idx]
+                away_team = team_leagues[num_teams - 1 - match_idx]
             else:
-                home_team = team_leagues[num_teams - 1 - i]
-                away_team = team_leagues[i]
+                home_team = team_leagues[num_teams - 1 - match_idx]
+                away_team = team_leagues[match_idx]
+
+            # Add time offset for multiple matches on the same day
+            match_datetime = round_date + timedelta(hours=match_idx * matches_per_day_interval)
 
             match = {
                 "league_id": league_id,
-                "match_datetime": round_date + timedelta(hours=7),
+                "match_datetime": match_datetime,
                 "home_team_id": home_team,
                 "away_team_id": away_team,
                 "match_day": round_idx + 1  # 1-based matchday numbering
             }
             matches_for_round.append(match)
 
-        # Collect this round’s matches
+        # Collect this round's matches
         schedule_first_round.extend(matches_for_round)
 
         # Rotate teams for next round (keeping the first team in place)
@@ -218,10 +238,6 @@ def generate_schedule_double_round(league_id, start_date, days_between_matchdays
     schedule_second_round = []
 
     # Offset: how many days to jump after the FIRST ROUND is done
-    # If the first round ends at matchday = total_matchdays,
-    # the second round starts at matchday = total_matchdays + 1
-    # So let's shift all second-round matches by total_matchdays in match_day
-    # and by total_matchdays * days_between_matchdays in match_datetime.
     offset_days = total_matchdays * days_between_matchdays
 
     for match in schedule_first_round:
@@ -241,18 +257,17 @@ def generate_schedule_double_round(league_id, start_date, days_between_matchdays
     # Optional: Log schedule for debugging
     league_msg = 'Double Round League Schedule:\n'
     for m in full_schedule:
-        dt_str = m['match_datetime'].strftime("%d.%m.%Y")
+        dt_str = m['match_datetime'].strftime("%d.%m.%Y %H:%M")
         league_msg += f"Round {m['match_day']} | {dt_str} | {m['home_team_id']} vs {m['away_team_id']}\n"
     telegram.send_log_message(league_msg)
+
     full_schedule = sql_db.insert_init_matches(full_schedule)
     for sc in full_schedule:
         create_task_for_match(sc)
 
-    # 6) Insert matches into the DB
     telegram.send_log_message(f"Scheduling insert successfully! Start date: {start_date}")
 
     return full_schedule
 
-
-
+#generate_schedule_double_round(1,'24.03.2025', 20,  1/72)
 #get_current_matches()
