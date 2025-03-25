@@ -155,41 +155,66 @@ def get_current_matches():
         # thread.start()
 
 #get_current_matches()
-def generate_schedule_double_round(league_id, start_date, start_hour_gmt, days_between_matchdays=7,
+def generate_schedule_double_round(league_id, start_date, start_time_gmt, days_between_matchdays=7,
                                    match_times_in_round=None):
     """
     Generates a double-round (home & away) schedule with flexible match timing.
 
     :param league_id: ID of the league for which schedule is generated
     :param start_date: "dd.mm.yyyy" string for the first matchday
-    :param start_hour_gmt: Starting hour in GMT (0-23)
+    :param start_time_gmt: Starting time in GMT as "HH:MM" or float hour
     :param days_between_matchdays: number of days between consecutive matchdays
-    :param match_times_in_round: Optional list of times (in hours) for matches in a round
+    :param match_times_in_round: Optional list of times (in "HH:MM" or float) for matches in a round
                                   If None, all matches in a round are scheduled at the same time
     :return: Combined schedule of both rounds
     """
+
+    # Helper function to convert time to hours and minutes
+    def parse_time(time_input):
+        if isinstance(time_input, (int, float)):
+            # If it's a number, treat it as hours
+            hours = int(time_input)
+            minutes = int((time_input - hours) * 60)
+            return hours, minutes
+        elif isinstance(time_input, str):
+            # If it's a string in "HH:MM" format
+            hours, minutes = map(int, time_input.split(':'))
+            return hours, minutes
+        else:
+            raise ValueError("Invalid time format. Use 'HH:MM' or float.")
 
     # Validate input parameters
     if days_between_matchdays < 0:
         raise ValueError("days_between_matchdays must be non-negative")
 
-    if not (0 <= start_hour_gmt <= 23):
-        raise ValueError("start_hour_gmt must be between 0 and 23")
+    # Parse and validate start time
+    start_hours, start_minutes = parse_time(start_time_gmt)
+    if not (0 <= start_hours <= 23 and 0 <= start_minutes <= 59):
+        raise ValueError("Start time must be between 00:00 and 23:59")
 
-    # Validate match_times_in_round if provided
+    # Validate match times if provided
     if match_times_in_round is not None:
-        if not isinstance(match_times_in_round, list):
-            raise ValueError("match_times_in_round must be a list of hours")
-        if any(not (0 <= time <= 23) for time in match_times_in_round):
-            raise ValueError("Match times must be between 0 and 23")
+        parsed_match_times = []
+        for time in match_times_in_round:
+            hours, minutes = parse_time(time)
+            if not (0 <= hours <= 23 and 0 <= minutes <= 59):
+                raise ValueError("Match times must be between 00:00 and 23:59")
+            parsed_match_times.append((hours, minutes))
+        match_times_in_round = parsed_match_times
 
     # 1) Fetch teams from your DB
-    telegram.send_log_message(f'Starting to build your league! date: {start_date}, GMT hour: {start_hour_gmt}')
+    telegram.send_log_message(
+        f'Starting to build your league! date: {start_date}, GMT time: {start_hours:02d}:{start_minutes:02d}')
     team_leagues = sql_db.select_league_teams(league_id)
     num_teams = len(team_leagues)
 
-    # 2) Convert start_date string to datetime object with specified GMT hour
-    start_dt = datetime.strptime(start_date, "%d.%m.%Y").replace(hour=start_hour_gmt, minute=0, second=0, microsecond=0)
+    # 2) Convert start_date string to datetime object with specified GMT time
+    start_dt = datetime.strptime(start_date, "%d.%m.%Y").replace(
+        hour=start_hours,
+        minute=start_minutes,
+        second=0,
+        microsecond=0
+    )
 
     # The single round schedule
     schedule_first_round = []
@@ -218,12 +243,12 @@ def generate_schedule_double_round(league_id, start_date, start_hour_gmt, days_b
 
             # Determine match time
             if match_times_in_round is None:
-                # Default: all matches at the same time (start_hour_gmt)
+                # Default: all matches at the same time (start_time_gmt)
                 match_datetime = round_date
             else:
                 # Use the provided times (cycling if fewer times than matches)
-                match_hour = match_times_in_round[match_idx % len(match_times_in_round)]
-                match_datetime = round_date.replace(hour=match_hour, minute=0, second=0, microsecond=0)
+                match_hours, match_minutes = match_times_in_round[match_idx % len(match_times_in_round)]
+                match_datetime = round_date.replace(hour=match_hours, minute=match_minutes, second=0, microsecond=0)
 
             match = {
                 "league_id": league_id,
@@ -257,9 +282,9 @@ def generate_schedule_double_round(league_id, start_date, start_hour_gmt, days_b
         else:
             # Find the original match's time index
             original_match_idx = schedule_first_round.index(match)
-            match_hour = match_times_in_round[original_match_idx % len(match_times_in_round)]
+            match_hours, match_minutes = match_times_in_round[original_match_idx % len(match_times_in_round)]
             second_round_match_datetime = (match['match_datetime'] + timedelta(days=offset_days)).replace(
-                hour=match_hour, minute=0, second=0, microsecond=0
+                hour=match_hours, minute=match_minutes, second=0, microsecond=0
             )
 
         second_round_match = {

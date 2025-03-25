@@ -201,6 +201,10 @@ def insert_player_attributes_game_effected(players_data, match_id):
         frsheness_attr = key['performance'].get('freshness_delta')
         if frsheness_attr:
             set_player_freshness(frsheness_attr, '+', key['player_id'])
+        sat_attr = key['performance'].get('satisfaction_delta')
+        if sat_attr:
+            set_player_satisfaction(sat_attr, '+', key['player_id'])
+
         attributes = {f"{ATTR.get(k, k)}": v for k, v in key['performance']['attribute_deltas'].items()}
         query = query.format(match_id=match_id, score=key['performance']['overall_score'], token=key['player_id'],
                              improved_attributes=str(attributes).replace("'", '"'))
