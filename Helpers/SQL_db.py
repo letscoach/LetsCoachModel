@@ -556,5 +556,9 @@ def get_training_history_by_team_id(team_id):
     #     d['players'] = json.loads(d['players'])
     return data
 
+def insert_man_of_the_match(token, match_id ):
+    query = sql_queries.INSERT_MAN_OF_THE_MATCH.format(token=token, match_id=match_id)
+    exec_update_query(query)
+
 def init_mock_db():
     return None
