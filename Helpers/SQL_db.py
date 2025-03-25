@@ -10,8 +10,8 @@ import sqlalchemy
 from google.auth import exceptions
 from sqlalchemy import text
 from Helpers.table_def import tables as DB_TABLES
-from Helpers.table_def import ATTRIBUTES as ATTR
-from Helpers.table_def import ATTR_REVERS as ATTR_REVERS
+# from Helpers.table_def import ATTRIBUTES as ATTR
+# from Helpers.table_def import ATTR_REVERS as ATTR_REVERS
 import Helpers.sql_queries as sql_queries
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
@@ -116,11 +116,11 @@ def set_attributes_dict():
     query = 'SELECT * FROM attributes'
     data = exec_select_query(query)
     data = [x._asdict() for x in data]
-    ATTR = {x['attribute_name'] : x['attribute_id'] for x in data}
-    ATTR_REVERS =  {str(v): k for k, v in ATTR.items()}
+    return {x['attribute_name'] : x['attribute_id'] for x in data}
 
-set_attributes_dict()
 
+ATTR = set_attributes_dict()
+ATTR_REVERS =  {str(v): k for k, v in ATTR.items()}
 def update_player_freshness(token, freshness):
     query = sql_queries.UPDATE_FRESHNESS_VALUE.format(token=token, freshness_value=freshness)
     exec_update_query(query)
