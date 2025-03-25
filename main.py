@@ -39,6 +39,6 @@ def LetscoachModel():
 # generate_schedule_double_round(4,'11.03.2025', 1)
 
 if __name__ == "__main__":
-    # game_launcher({"league_id": 1, "home_team_id": 64, "away_team_id": 69, "match_day": 1, "match_id": 320})
+    # game_launcher({"league_id": 1, "home_team_id": 64, "away_team_id": 69, "match_day": 1, "match_id": 308})
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
