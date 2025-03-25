@@ -154,7 +154,7 @@ INSERT INTO player_match_results (
     improved_attributes
 )
 VALUES
-    ({match_id}, '{token}', LEAST({score}, 5), '{improved_attributes}');
+    ({match_id}, '{token}', {score}, '{improved_attributes}');
 '''
 INSERT_IMPROVEMENT_MATCH_TRAINING_EFFECTED = '''
 INSERT INTO player_training_results (
