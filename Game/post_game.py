@@ -105,7 +105,7 @@ class SatisfactionCalculator:
     def satisfaction_change_for_non_players(non_players):
         non_players_satisfaction_change = 2
         for player in non_players:
-            db.set_player_freshness(non_players_satisfaction_change, '-',player)
+            db.set_player_satisfaction(non_players_satisfaction_change, '-',player)
 
 
 def calculate_player_score(player, player_story, team_score, opponent_score, team_won):

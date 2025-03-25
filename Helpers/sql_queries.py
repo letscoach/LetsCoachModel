@@ -115,6 +115,7 @@ SET attribute_value =
         WHEN attribute_value {operator} {satisfaction_value} < 0 THEN 0
         WHEN attribute_value {operator} {satisfaction_value} > 100 THEN 100
         ELSE attribute_value {operator} {satisfaction_value}
+    END
 WHERE
 attribute_id = 22 
 AND  token = '{token}'
@@ -154,7 +155,7 @@ INSERT INTO player_match_results (
     improved_attributes
 )
 VALUES
-    ({match_id}, '{token}', {score}, '{improved_attributes}');
+    ({match_id}, '{token}', LEAST({score}, 5), '{improved_attributes}');
 '''
 INSERT_IMPROVEMENT_MATCH_TRAINING_EFFECTED = '''
 INSERT INTO player_training_results (
