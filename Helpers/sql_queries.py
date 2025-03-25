@@ -98,20 +98,23 @@ attribute_id = 15
 AND  token = '{token}'
 '''
 SET_FRESHNESS_VALUE = '''
-UPDATE
-  player_dynamic_attributes
-SET
-  attribute_value = attribute_value {operator} {freshness_value}
-WHERE
-attribute_id = 15 
-AND  token = '{token}'
+UPDATE player_dynamic_attributes
+SET attribute_value = 
+    CASE
+        WHEN attribute_value {operator} {freshness_value} < 0 THEN 0
+        ELSE attribute_value {operator} {freshness_value}
+    END
+WHERE attribute_id = 15 AND token = '{token}'
 '''
 
 SET_SATISFACTION_VALUE = '''
 UPDATE
   player_dynamic_attributes
-SET
-  attribute_value = attribute_value {operator} {satisfaction_value}
+SET attribute_value = 
+    CASE
+        WHEN attribute_value {operator} {satisfaction_value} < 0 THEN 0
+        WHEN attribute_value {operator} {satisfaction_value} > 100 THEN 100
+        ELSE attribute_value {operator} {satisfaction_value}
 WHERE
 attribute_id = 22 
 AND  token = '{token}'
@@ -151,7 +154,7 @@ INSERT INTO player_match_results (
     improved_attributes
 )
 VALUES
-    ({match_id}, '{token}', {score}, '{improved_attributes}');
+    ({match_id}, '{token}', LEAST({score}, 5), '{improved_attributes}');
 '''
 INSERT_IMPROVEMENT_MATCH_TRAINING_EFFECTED = '''
 INSERT INTO player_training_results (
