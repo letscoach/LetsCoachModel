@@ -965,3 +965,13 @@ GROUP BY
     p.token;
 '''
 
+INSERT_MAN_OF_THE_MATCH = '''
+INSERT INTO
+  trophies (trophy_id,
+    token,
+    match_id,
+    awarded_at)
+VALUES
+  (1, '{token}', {match_id}, NOW());
+'''
+
