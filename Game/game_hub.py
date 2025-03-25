@@ -186,7 +186,7 @@ class GameProcessor:
         db.insert_match_details(self.game_id, output.get('events', []))
         db.update_matche_result(self.game_id, f"{team1_score}-{team2_score}",output.get('time_played_mins'))
         try:
-            db.insert_man_of_the_match(output['man_of_the_match'], output['match_id'])
+            db.insert_man_of_the_match(output['man_of_the_match'], self.game_id)
         except Exception as e:
             send_log_message(f"Error : {e}, continue running!")
         self.update_player_data_in_db(self.game_id, output['player_stories'])
