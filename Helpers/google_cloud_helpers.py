@@ -20,7 +20,7 @@ def create_task_for_match(data):
     if credentials.expired or not credentials.valid:
         credentials.refresh(Request())
     API_TOKEN = credentials.token
-    url = "https://cloudtasks.googleapis.com/v2/projects/zinc-strategy-446518-s7/locations/us-central1/queues/LaunchModelGame/tasks"
+    url = "https://cloudtasks.googleapis.com/v2/projects/zinc-strategy-446518-s7/locations/us-central1/queues/LetsCoachDev/tasks"
     schedule_time =data['match_datetime']
     del data['match_datetime']
     base64body =json.dumps(data)
@@ -32,7 +32,7 @@ def create_task_for_match(data):
       "task": {
         "httpRequest": {
           "httpMethod": "POST",
-          "url": "https://letcoach-model-354078768099.us-central1.run.app",
+          "url": "https://letcoach-model-dev-354078768099.us-central1.run.app",
           "headers": {
             "Content-Type": "application/json"
           },
