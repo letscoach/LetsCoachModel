@@ -66,7 +66,10 @@ def complete_training(session_id):
     players_data = {}
 
     for player in players:
-        impacted_attributes = sample(affected_attributes, k=choice([1, 2]))
+        if training_type != 'Recovery Training':
+            impacted_attributes = sample(affected_attributes, k=choice([1, 2]))
+        else:
+            impacted_attributes = ['Freshness']
         properties = {}
         player_data = sql_db.get_player_by_token(player)
         attr_dict = player_data['properties']
@@ -80,11 +83,12 @@ def complete_training(session_id):
         for attribute in impacted_attributes:
             properties[attribute] = actual_improvement
 
+        if training_type != 'Recovery Training':
         # Reduce fatigue
-        fatigue_reduction = 25 - (attr_dict['Endurance'] / 4) + {"Light": 0, "Medium": 2, "Hard": 5}[intensity_level]
-        properties["Freshness"] = -fatigue_reduction #min(100, player["Freshness"] - fatigue_reduction)
+            fatigue_reduction = 25 - (attr_dict['Endurance'] / 4) + {"Light": 0, "Medium": 2, "Hard": 5}[intensity_level]
+            properties["Freshness"] = -fatigue_reduction #min(100, player["Freshness"] - fatigue_reduction)
 
-        if intensity_level == 'Intense':
+        if intensity_level == 'Hard':
             for hard_trained_player in conseq_hard:
                 if hard_trained_player['token'] == player and hard_trained_player['hard_trainings_last_7_days'] > 3:
                     properties["Satisfaction"] = -2
@@ -131,4 +135,4 @@ def get_fatigue_reduction(endurance, intensity):
 #else:
 #    injury_probability *= 4
 
-complete_training(142)
+complete_training(139)
