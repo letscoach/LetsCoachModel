@@ -18,7 +18,7 @@ from sqlalchemy.exc import IntegrityError
 
 
 def connect_with_connector() -> sqlalchemy.engine.base.Engine:
-    instance_connection_name = 'zinc-strategy-446518-s7:us-central1:letscoach'
+    instance_connection_name = 'zinc-strategy-446518-s7:us-central1:letscoach-dev'
     db_user = 'me'  # e.g. 'my-db-user'
     db_pass = 'Ab123456'  # e.g. 'my-db-password'
     db_name = 'main_game'  # e.g. 'my-database'
