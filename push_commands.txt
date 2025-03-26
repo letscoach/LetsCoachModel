@@ -1,0 +1,14 @@
+gcloud auth login
+gcloud config set project zinc-strategy-446518-s7
+gcloud services enable containerregistry.googleapis.com
+docker build -t letcoach-model-dev .
+
+gcloud auth configure-docker
+docker tag letcoach-model-dev gcr.io/zinc-strategy-446518-s7/letcoach-model-dev:latest
+
+docker push gcr.io/zinc-strategy-446518-s7/letcoach-model-dev:latest
+gcloud container images list --repository=gcr.io/zinc-strategy-446518-s7
+
+
+then go to https://console.cloud.google.com/artifacts/docker/zinc-strategy-446518-s7/us/gcr.io/letcoach-backend/sha256:b1a9676137cbb610d5c910f4342e7cc3564add88e3044b65e0c51089667a65c2?authuser=1
+and press deploy
