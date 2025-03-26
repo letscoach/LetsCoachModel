@@ -74,14 +74,14 @@ def complete_training(session_id):
         # DONE Convert to dictionary - AMICHAi - can you return a doctionary?
         # attr_dict = {key.strip(): float(value.strip()) for key, value in
         #              (item.split(":") for item in attr_str.split(","))}
-        base_improvement = {"Light": 0.005, "Medium": 0.008, "Intense": 0.012}[intensity_level]
+        base_improvement = {"Light": 0.005, "Medium": 0.008, "Hard": 0.012}[intensity_level]
         actual_improvement = base_improvement * (attr_dict["Trainability"] / 100) * (player_data['properties']["Freshness"] / 100)
 
         for attribute in impacted_attributes:
             properties[attribute] = actual_improvement
 
         # Reduce fatigue
-        fatigue_reduction = 25 - (attr_dict['Endurance'] / 4) + {"Light": 0, "Medium": 2, "Intense": 5}[intensity_level]
+        fatigue_reduction = 25 - (attr_dict['Endurance'] / 4) + {"Light": 0, "Medium": 2, "Hard": 5}[intensity_level]
         properties["Freshness"] = -fatigue_reduction #min(100, player["Freshness"] - fatigue_reduction)
 
         if intensity_level == 'Intense':
@@ -130,3 +130,5 @@ def get_fatigue_reduction(endurance, intensity):
 #    injury_probability *= 3
 #else:
 #    injury_probability *= 4
+
+complete_training(142)
