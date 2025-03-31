@@ -6,7 +6,7 @@ GROUP_ID = "-1002330022427"
 def send_log_message(message):
 
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    params = {"chat_id": GROUP_ID, "text": f'DEV: {message}')
+    params = {"chat_id": GROUP_ID, "text": f'DEV: {message}'}
     response = requests.get(url, params=params)
     print(response.json())
 

@@ -313,5 +313,6 @@ def generate_schedule_double_round(league_id, start_date, start_time_gmt, days_b
     telegram.send_log_message(f"Scheduling insert successfully! Start date: {start_date}")
 
     return full_schedule
-#generate_schedule_double_round(1,'24.03.2025', 20,  1/72)
+
+# generate_schedule_double_round(1,'1.04.2025', '15:30',  3.5)
 #get_current_matches()
