@@ -6,6 +6,22 @@ from Helpers import SQL_db as db
 def round_up_to_half(score):
     return round((score * 2 + 1) // 1) / 2
 
+def calc_man_of_the_match(results):
+    man_of_the_match = ''
+    highest_score = 0
+    for player_result in results:
+        player_score = 0
+        player_id = player_result["player_id"]
+        if (player_result['performance']["team_won"]):
+            player_score += 100
+
+        player_score += player_result["performance"]['overall_score'] * 50 + 5 * player_result["performance"]["scored_goal"] +  3 * player_result["performance"]["assist"] + 3 * player_result["performance"]["defense_action"]
+
+        if (player_score > highest_score):
+            highest_score = player_score
+            man_of_the_match = player_id
+
+    return man_of_the_match
 
 class EventLogger:
     def __init__(self):
@@ -365,8 +381,6 @@ class PostGameProcessor:
 
     def generate_player_stories(self, all_players):
         player_stories = []
-        man_of_the_match = ''
-        man_of_the_match_score = 0
         for player in all_players:
             player_stories.append({
                 "player_id": player['player_id'],
@@ -376,11 +390,7 @@ class PostGameProcessor:
                 "injured": False,
                 "punished": player.get("punished", False)
             })
-            personal_score = 5 * player.get("scored_goal", 0) + 3 * (player.get("assist", 0) + player.get("defense_action", 0))
-            if (personal_score > man_of_the_match_score):
-                man_of_the_match_score = personal_score
-                man_of_the_match = player['player_id']
-        return player_stories , man_of_the_match
+        return player_stories
 
     def process_post_game(self, team1_id, team2_id, team1_score, team2_score):
         team1_formation = self.get_team_formation(team1_id)
@@ -426,7 +436,7 @@ class PostGameProcessor:
             event_logger
         )
 
-        player_stories, man_of_the_match = self.generate_player_stories(all_players)
+        player_stories = self.generate_player_stories(all_players)
 
         results = []
         for player, story in zip(all_players, player_stories):
@@ -455,6 +465,8 @@ class PostGameProcessor:
                     "freshness_delta": -self.calculate_freshness_drop(player['properties']['Endurance']),
                 }
             })
+
+        man_of_the_match = calc_man_of_the_match(results)
         SatisfactionCalculator.calculate_satisfaction_changes(results, team1_score, team2_score, man_of_the_match)
 
         SatisfactionCalculator.satisfaction_change_for_non_players(non_players)
