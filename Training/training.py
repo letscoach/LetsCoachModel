@@ -1,3 +1,4 @@
+import random
 from datetime import datetime, timedelta
 from random import choice, sample
 import Helpers.SQL_db as sql_db
@@ -74,14 +75,11 @@ def complete_training(session_id):
         player_data = sql_db.get_player_by_token(player)
         attr_dict = player_data['properties']
 
-        # DONE Convert to dictionary - AMICHAi - can you return a doctionary?
-        # attr_dict = {key.strip(): float(value.strip()) for key, value in
-        #              (item.split(":") for item in attr_str.split(","))}
         base_improvement = {"Light": 0.005, "Medium": 0.008, "Hard": 0.012}[intensity_level]
         actual_improvement = base_improvement * (attr_dict["Trainability"] / 100) * (player_data['properties']["Freshness"] / 100)
 
         for attribute in impacted_attributes:
-            properties[attribute] = actual_improvement
+            properties[attribute] = actual_improvement * (1 + random.random())
 
         if training_type != 'Recovery Training':
         # Reduce fatigue
@@ -135,4 +133,4 @@ def get_fatigue_reduction(endurance, intensity):
 #else:
 #    injury_probability *= 4
 
-complete_training(139)
+#complete_training(139)

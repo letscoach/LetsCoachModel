@@ -1,7 +1,4 @@
 import os
-import json
-
-from sqlalchemy.orm import session
 
 import google.auth
 from google.cloud.sql.connector import Connector, IPTypes
@@ -10,8 +7,6 @@ import sqlalchemy
 from google.auth import exceptions
 from sqlalchemy import text
 from Helpers.table_def import tables as DB_TABLES
-# from Helpers.table_def import ATTRIBUTES as ATTR
-# from Helpers.table_def import ATTR_REVERS as ATTR_REVERS
 import Helpers.sql_queries as sql_queries
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
