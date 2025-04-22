@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 class GameManager:
     def __init__(self, game_id):
         self.game_id = game_id
-        self.simulator = FootballSimulator()
         self.game_state = None
 
     def init_game(self, team1_id: str, team2_id: str, must_win=False, incremental=False) -> Dict:
@@ -72,10 +71,33 @@ class GameManager:
                 'game_over': False
             }
 
-            return {
-                'game_state': self.game_state,
-                'status': 'initialized'
-            }
+            # NEW CODE: Run the full simulation automatically if incremental is True
+            print("===== First Half =====")
+            for i in range(9):  # 9 periods of 5 minutes = 45 minutes
+                period_result = self.simulate_next_period(period_length=5)
+                print(
+                    f"Minute {period_result['current_minute']}: {period_result['team1_score']} - {period_result['team2_score']}")
+
+            print("\n===== Second Half =====")
+            for i in range(9):  # 9 periods of 5 minutes = 45 minutes
+                period_result = self.simulate_next_period(period_length=5)
+                print(
+                    f"Minute {period_result['current_minute']}: {period_result['team1_score']} - {period_result['team2_score']}")
+
+            # Handle extra time if needed (since must_win might be True)
+            if not self.game_state['game_over']:
+                print("\n===== Extra Time =====")
+                while not self.game_state['game_over']:
+                    period_result = self.simulate_next_period(period_length=5)
+                    print(
+                        f"Minute {period_result['current_minute']}: {period_result['team1_score']} - {period_result['team2_score']}")
+
+            # Finalize the game to generate the complete game report
+            final_result = self.finalize_game()
+            print(f"\nFinal score: {final_result['result']['team1_score']} - {final_result['result']['team2_score']}")
+            print(f"Man of the match: {final_result['man_of_the_match']}")
+
+            return final_result
         else:
             # Full simulation
             send_log_message("6.Simulate the game")
@@ -112,7 +134,6 @@ class GameManager:
             send_log_message("8.End game_hub")
 
             return output
-
     def simulate_next_period(self, period_length=5):
         """
         Simulates the next period of the game with recalculated team grades and freshness.
@@ -267,7 +288,8 @@ class GameManager:
                 player_data['properties']['Freshness'] = new_freshness
 
                 # Update in database
-                db.update_player_property(player_id, 'Freshness', new_freshness)
+                if current_minute != 0:
+                    db.update_player_freshness(player_id, -freshness_loss)
 
     def _get_final_result(self):
         """Returns the final result of the game"""
@@ -582,12 +604,13 @@ class GameManager:
         final_result = game_manager.finalize_game()
         print(f"\nFinal score: {final_result['result']['team1_score']} - {final_result['result']['team2_score']}")
 
-    if __name__ == "__main__":
-        print("Running full game simulation:")
-        run_full_game()
 
-        print("\nRunning incremental game simulation:")
-        run_incremental_game()
+game_manager = GameManager(game_id="444")
 
-        print("\nRunning tactical game simulation:")
-        run_tactical_game()
+# Initialize the game for live simulation with must_win=True
+game_state = game_manager.init_game(
+    team1_id="99",  # home team ID
+    team2_id="92",  # away team ID
+    must_win=True,  # ensure there's a winner
+    incremental=True  # for live simulation
+)

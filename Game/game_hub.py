@@ -77,12 +77,13 @@ class GameProcessor:
         },
     }
 
-    def __init__(self, game_id):
+    def __init__(self, game_id, game_type):
         """
         Initialize the GameProcessor with fixed position weights and PostGameProcessor.
         """
         self.post_game_processor = PostGameProcessor(self.POSITION_WEIGHTS)
         self.game_id = game_id
+        self.game_type = game_type
     def get_team_formation(self, team_id: str) -> List[List[str]]:
         """
         Retrieve the team formation from the database by team ID.
@@ -180,7 +181,11 @@ class GameProcessor:
         team1_score, team2_score = self.simulate_game(team1_grades, team2_grades)
 
         # Step 4: Process post-game data using PostGameProcessor
-        output = self.post_game_processor.process_post_game(team1_id, team2_id, team1_score, team2_score)
+        output = {}
+        if self.game_type == 11:
+            output = self.post_game_processor.process_post_game(team1_id, team2_id, team1_score, team2_score)
+        elif self.game_type == 12:
+            output = self.post_game_processor.process_must_win_game(team1_id, team2_id, team1_score, team2_score)
         send_log_message("7.Insert into db all match data")
 
         db.insert_match_details(self.game_id, output.get('events', []))
