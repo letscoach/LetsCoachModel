@@ -1,6 +1,6 @@
 import json
 import random
-import formation_grader
+from Game import formation_grader
 from Helpers import SQL_db as db
 
 

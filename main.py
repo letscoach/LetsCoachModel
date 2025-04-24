@@ -1,5 +1,4 @@
 import os
-import functions_framework
 from Game.Matches import game_launcher, generate_schedule_double_round
 from Helpers.telegram_manager import send_log_message
 from flask import Flask, jsonify, request
