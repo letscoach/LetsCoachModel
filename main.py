@@ -1,43 +1,32 @@
 import os
-from Game.Matches import game_launcher, generate_schedule_double_round
 from Helpers.telegram_manager import send_log_message
 from flask import Flask, jsonify, request
 
-from Game.freshness_update import update_freshness_for_team
-from Game.update_satisfaction import update_satisfaction_for_team
-from Training.training import complete_training
+from LetsCoachModel.types_handler import ACTION_MAP
 
 app = Flask(__name__)
-
 
 @app.route("/", methods=["POST"])
 def LetscoachModel():
     """Cloud Function that runs the match algorithm"""
     try:
         send_log_message("Cloud function running now")
-        # request_json = {"league_id": 1, "home_team_id": 64, "away_team_id": 69, "match_day": 1, "match_id": 320}
-        request_json = request.get_json(silent=True)
-        if request_json.get('type') == 'training':
-            res = complete_training(request_json.get('training_id'))
-        if request_json.get('type') == 'freshness_update':
-            res = update_freshness_for_team(request_json.get('team_id'))
-            res = update_satisfaction_for_team(request_json.get('team_id'))
+        data = request.get_json(silent=True) or {}
+        action_type = data.get('type')
+
+        handler = ACTION_MAP.get(action_type)
+        if handler:
+            result = handler(data)
+            return jsonify({"message": result}), 200
         else:
-            away_team_id = request_json.get('away_team_id')
-            home_team_id = request_json.get('home_team_id')
-            match_id = request_json.get('match_id')
+            send_log_message(f"Error : Unknown type: {action_type}")
+            return jsonify({"error": f"Unknown type: {action_type}"}), 400
 
-            res = game_launcher(dict(away_team_id=away_team_id, home_team_id=home_team_id, match_id=match_id))
-
-        return jsonify({"message": res}), 200
     except Exception as e:
         send_log_message(f"Error : {str(e)}")
         return jsonify({"error": str(e)}), 200
 
-# LetscoachModel()
-# generate_schedule_double_round(4,'11.03.2025', 1)
 
 if __name__ == "__main__":
-    # game_launcher({"league_id": 1, "home_team_id": 64, "away_team_id": 69, "match_day": 1, "match_id": 308})
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
