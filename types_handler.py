@@ -24,10 +24,10 @@ def match_handler(data):
 
 def competition_handler(data):
     competition_type = data.get('competition_type')
-    if competition_type == '5k':
+    if competition_type == 2:
         comp = Run5k(data)
         return comp.run_and_update()
-    elif competition_type == '100m':
+    elif competition_type == 1:
         comp = Run100(data)
         return comp.run_and_update()
     else:
