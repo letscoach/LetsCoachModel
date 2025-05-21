@@ -221,6 +221,7 @@ class Run5k:
 
         return True, f"Player {player.get('name', 'Unknown')} successfully registered for 5k Run"
 
+
     def calculate_race_time(self, player: Dict) -> float:
         """
         Calculate a player's race time based on their attributes.
@@ -321,7 +322,6 @@ class Run5k:
             performance = {
                 'attribute_deltas': {},
                 'overall_score': 0,
-                'team_won': False  # Not applicable for race
             }
 
             # Calculate satisfaction change based on quintiles for valid results
@@ -374,3 +374,8 @@ class Run5k:
 
         # Use existing DB function to apply changes
         db.insert_player_attributes_competition_effected(attribute_changes, self.competition_id)
+
+    def run_and_update(self):
+        self.run_competition()
+        self.calculate_attribute_changes()
+        self.apply_attribute_changes()

@@ -352,3 +352,8 @@ class Dash100:
 
         # Use existing DB function to apply changes
         db.insert_player_attributes_competition_effected(attribute_changes, self.competition_id)
+
+ def run_and_update(self):
+        self.run_competition()
+        self.calculate_attribute_changes()
+        self.apply_attribute_changes()
