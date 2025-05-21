@@ -586,7 +586,7 @@ def insert_player_attributes_competition_effected(players_data, competition_id):
         frsheness_attr = player['attributes'].get('Freshness')
         if frsheness_attr:
             del player['attributes']['Freshness']
-            set_player_freshness(frsheness_attr,'+',player['player_id'])
+            set_player_freshness(frsheness_attr,'+',player['token'])
 
         satisfaction_attr = player['attributes'].get('Satisfaction')
         if satisfaction_attr:

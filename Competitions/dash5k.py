@@ -20,10 +20,10 @@ class Run5k:
 
     # Attribute weights for core score calculation
     ATTRIBUTE_WEIGHTS = {
-        "ENDURANCE": 0.60,
-        "SPEED": 0.25,
-        "SATISFACTION": 0.10,
-        "PHYSICALITY": 0.05
+        "Endurance": 0.60,
+        "Speed": 0.25,
+        "Satisfaction": 0.10,
+        "Physicality": 0.05
     }
 
     # Exponent for non-linear formula
@@ -37,190 +37,8 @@ class Run5k:
             competition_id: Unique identifier for this competition instance
         """
         self.competition_id = competition_id
-        self.participants = db.get_competition_participants(competition_id) if competition_id else []
+        self.participants = db.select_players_for_competition(competition_id)
         self.results = []
-
-    def verify_player_eligibility(self, player_token: str, team_id: int, competition_time: datetime) -> Tuple[
-        bool, str]:
-        """
-        Verify if a player is eligible to participate in the 5k Run competition.
-
-        Args:
-            player_token: Player's unique identifier
-            team_id: Team's ID
-            competition_time: Scheduled start time of the competition
-
-        Returns:
-            Tuple of (is_eligible, reason_if_not_eligible)
-        """
-        # Check 1: Player exists and has required attributes
-        player = db.get_player_by_token(player_token)
-        if not player:
-            return False, "Player not found"
-
-        # Extract player's properties
-        player_props = player.get('properties', {})
-        if 'Freshness' not in player_props:
-            return False, "Player missing required attributes"
-
-        # Check 2: Freshness threshold
-        if player_props.get('Freshness', 0) < self.FRESHNESS_THRESHOLD:
-            return False, f"Player's freshness is too low ({player_props.get('Freshness', 0)})"
-
-        # Check 3: Team official match conflict (within 5 hours before or after)
-        match_conflict = self._check_team_official_match(team_id, competition_time)
-        if match_conflict:
-            return False, "Team has an official match within 5 hours of the competition"
-
-        # Check 4: Player training conflict
-        training_conflict, end_time = self._check_player_training(player_token, team_id, competition_time)
-        if training_conflict:
-            return False, f"Player is in training until {end_time.strftime('%H:%M')}"
-
-        # Check 5: Team already has a participant
-        if self._check_team_already_registered(team_id):
-            return False, "Another player from this team is already registered"
-
-        # Check 6: Weekly participation limit
-        if self._check_weekly_participation(player_token):
-            return False, "Player has already participated in the 5k Run this week"
-
-        # Check 7: Player registered for another competition
-        other_comp = self._check_other_competition(player_token, competition_time)
-        if other_comp:
-            return False, f"Player is already registered for {other_comp}"
-
-        # All checks passed
-        return True, "Eligible"
-
-    def _check_team_official_match(self, team_id: int, competition_time: datetime) -> bool:
-        """Check if team has an official match within 5 hours before or after competition time."""
-        # Get upcoming matches
-        next_match = db.get_next_time_match(team_id)
-
-        if next_match:
-            # Convert relative time to absolute time
-            match_time_delta = timedelta(
-                days=next_match.get('days', 0),
-                hours=next_match.get('hours', 0),
-                minutes=next_match.get('minutes', 0)
-            )
-
-            # Calculate match time
-            now = datetime.now()
-            match_time = now + match_time_delta
-
-            # Check if match is within 5 hours before or after competition
-            time_diff = abs((match_time - competition_time).total_seconds()) / 3600
-            if time_diff <= 5:
-                return True
-
-        return False
-
-    def _check_player_training(self, player_token: str, team_id: int, competition_time: datetime) -> Tuple[
-        bool, Optional[datetime]]:
-        """Check if player is in training that conflicts with competition time."""
-        # Get team trainings
-        trainings = db.get_team_training(team_id)
-
-        for training in trainings:
-            # Parse participating players
-            try:
-                participating_players = json.loads(training.get('participating_players', '[]'))
-
-                # Check if player is part of this training
-                if player_token in participating_players:
-                    # Check if training ends after competition starts
-                    end_date = training.get('end_date')
-                    if isinstance(end_date, str):
-                        end_date = datetime.strptime(end_date, "%Y-%m-%d %H:%M:%S")
-
-                    if end_date and end_date > competition_time:
-                        return True, end_date
-            except:
-                # If error parsing JSON, continue to next training
-                continue
-
-        return False, None
-
-    def _check_team_already_registered(self, team_id: int) -> bool:
-        """Check if another player from this team is already registered."""
-        # Check in memory list of participants
-        for participant in self.participants:
-            if participant.get('team_id') == team_id:
-                return True
-        return False
-
-    def _check_weekly_participation(self, player_token: str) -> bool:
-        """Check if player has already participated in 5k Run this week."""
-        # Get player competitions
-        competitions = db.get_player_competition(player_token)
-
-        # Filter for 5k Run competitions in the last 7 days
-        one_week_ago = datetime.now() - timedelta(days=7)
-
-        for comp in competitions:
-            if (comp.get('competition_type') == '5k_run' and
-                    comp.get('competition_date') and
-                    comp.get('competition_date') > one_week_ago):
-                return True
-
-        return False
-
-    def _check_other_competition(self, player_token: str, competition_time: datetime) -> Optional[str]:
-        """Check if player is registered for another daily competition."""
-        # Get player competitions
-        competitions = db.get_player_competition(player_token)
-
-        # Get competition date (just the day part)
-        comp_date = competition_time.date()
-
-        for comp in competitions:
-            if comp.get('competition_date'):
-                # Check if competition is on the same day
-                other_comp_date = comp.get('competition_date').date()
-                if other_comp_date == comp_date and comp.get('competition_type') != '5k_run':
-                    return comp.get('competition_name', 'another competition')
-
-        return None
-
-    def register_player(self, player_token: str, team_id: int, competition_time: datetime) -> Tuple[bool, str]:
-        """
-        Register a player for the competition after verifying eligibility.
-
-        Args:
-            player_token: Player's unique identifier
-            team_id: Team's ID
-            competition_time: Scheduled competition time
-
-        Returns:
-            Tuple of (success, message)
-        """
-        # Verify eligibility
-        is_eligible, reason = self.verify_player_eligibility(player_token, team_id, competition_time)
-        if not is_eligible:
-            return False, reason
-
-        # Get player data
-        player = db.get_player_by_token(player_token)
-        if not player:
-            return False, "Player not found"
-
-        # Get team data
-        team = db.get_team_by_id(team_id)
-        team_name = team.get('team_name', 'Unknown Team') if team else 'Unknown Team'
-
-        # Add to participants list
-        self.participants.append({
-            'player_id': player_token,
-            'player_name': player.get('name', 'Unknown Player'),
-            'team_id': team_id,
-            'team_name': team_name,
-            'registration_time': datetime.now()
-        })
-
-        return True, f"Player {player.get('name', 'Unknown')} successfully registered for 5k Run"
-
 
     def calculate_race_time(self, player: Dict) -> float:
         """
@@ -233,7 +51,7 @@ class Run5k:
             Race time in seconds (or DNF_TIME if below freshness threshold)
         """
         # Get player properties
-        properties = player.get('properties', {})
+        properties = player.get('attributes', {})
 
         # Check FRESHNESS threshold
         freshness = properties.get('Freshness', 0)
@@ -270,20 +88,12 @@ class Run5k:
 
         # Calculate race time for each participant
         for participant in self.participants:
-            player_id = participant['player_id']
-
-            # Get full player data from database
-            player = db.get_player_by_token(player_id)
-
             # Calculate race time
-            race_time = self.calculate_race_time(player)
+            race_time = self.calculate_race_time(participant)
 
             # Add to results
             results.append({
-                'player_id': player_id,
-                'player_name': participant['player_name'],
-                'team_id': participant['team_id'],
-                'team_name': participant['team_name'],
+                'token': participant['token'],  # Changed to 'token' to match required format
                 'race_time': race_time,
                 'dnf': race_time >= self.DNF_TIME
             })
@@ -293,21 +103,31 @@ class Run5k:
 
         # Add ranking
         for i, result in enumerate(results):
-            result['rank'] = i + 1
+            result['rank_position'] = i + 1  # Changed to 'rank_position' to match required format
+
+            # Calculate score based on race time (inverted and normalized to 0-100)
+            if result.get('dnf', False):
+                result['score'] = 0
+            else:
+                # Normalize: best time (MIN_TIME) = 100, worst time (MAX_TIME) = 0
+                normalized_time = max(0,
+                                      min(1, (self.MAX_TIME - result['race_time']) / (self.MAX_TIME - self.MIN_TIME)))
+                result['score'] = round(normalized_time * 100)
 
         # Store results for later use
         self.results = results
 
         return results
 
-    def calculate_attribute_changes(self) -> List[Dict]:
+    def calculate_attribute_changes(self) -> Dict[str, Dict]:
         """
         Calculate attribute changes for participants based on competition results.
 
         Returns:
-            List of player performance objects compatible with SQL_db.insert_player_attributes_game_effected
+            Dictionary of player attribute changes formatted for insert_player_attributes_competition_effected
         """
-        attribute_changes = []
+        # Initialize dictionary to store formatted attribute changes
+        formatted_changes = {}
 
         # Filter out DNF results for quintile calculations
         valid_results = [r for r in self.results if not r.get('dnf', False)]
@@ -315,36 +135,43 @@ class Run5k:
 
         # Calculate changes for all participants (including DNF)
         for result in self.results:
-            player_id = result['player_id']
-            player = db.get_player_by_token(player_id)
+            player_token = result['token']
+            player = db.get_player_by_token(player_token)
 
-            # Initialize performance object
-            performance = {
-                'attribute_deltas': {},
-                'overall_score': 0,
+            # Initialize player data with required structure
+            player_data = {
+                'token': player_token,
+                'attributes': {},
+                'rank_position': result.get('rank_position', 0),
+                'score': result.get('score', 0)
             }
+
+            # Add is_winner field for top 3 finishers
+            if result.get('rank_position', 0) <= 3 and not result.get('dnf', False):
+                player_data['is_winner'] = result.get('rank_position', 0)
 
             # Calculate satisfaction change based on quintiles for valid results
             if not result.get('dnf', False) and total_valid > 0:
                 # Find participant's position in the results (0-indexed)
-                position = next((i for i, r in enumerate(valid_results) if r['player_id'] == player_id), -1)
+                position = next((i for i, r in enumerate(valid_results) if r['token'] == player_token), -1)
 
                 # Calculate percentile (0 to 1, where 0 is best)
                 percentile = position / total_valid if position >= 0 else 1.0
 
                 # Determine satisfaction change based on quintile
                 if percentile < 0.2:  # Top 20%
-                    satisfaction_delta = 10
+                    player_data['attributes']['Satisfaction'] = 10
                 elif percentile < 0.4:  # 20-40%
-                    satisfaction_delta = 5
+                    player_data['attributes']['Satisfaction'] = 5
                 elif percentile < 0.6:  # 40-60%
-                    satisfaction_delta = 0
+                    player_data['attributes']['Satisfaction'] = 0
                 elif percentile < 0.8:  # 60-80%
-                    satisfaction_delta = -5
+                    player_data['attributes']['Satisfaction'] = -5
                 else:  # Bottom 20%
-                    satisfaction_delta = -10
-
-                performance['satisfaction_delta'] = satisfaction_delta
+                    player_data['attributes']['Satisfaction'] = -10
+            else:
+                # DNF players get a satisfaction penalty
+                player_data['attributes']['Satisfaction'] = -15
 
             # Calculate freshness decrease - 50% of full match fatigue
             properties = player.get('properties', {})
@@ -354,28 +181,45 @@ class Run5k:
             full_match_fatigue = 35 - (endurance / 4)
             freshness_decrease = full_match_fatigue * 0.5  # 50% of full match
 
-            performance['freshness_delta'] = -freshness_decrease  # Negative for decrease
+            player_data['attributes']['Freshness'] = -freshness_decrease  # Negative for decrease
 
-            # Add to attribute changes list in format compatible with insert_player_attributes_game_effected
-            attribute_changes.append({
-                'player_id': player_id,
-                'performance': performance
-            })
+            # Add small attribute improvements for top performers
+            if not result.get('dnf', False) and result.get('rank_position', 0) <= 3:
+                player_data['attributes']['Endurance'] = 0.02
+                player_data['attributes']['Speed'] = 0.01
 
-        return attribute_changes
+            # Add player to the formatted changes dictionary
+            formatted_changes[player_token] = player_data
+
+        return formatted_changes
 
     def apply_attribute_changes(self) -> None:
         """
         Apply the calculated attribute changes to players in the database.
-        Uses the existing insert_player_attributes_game_effected function.
+        Uses the existing insert_player_attributes_competition_effected function.
         """
-        # Calculate attribute changes
+        # Calculate attribute changes in the required format
         attribute_changes = self.calculate_attribute_changes()
 
         # Use existing DB function to apply changes
         db.insert_player_attributes_competition_effected(attribute_changes, self.competition_id)
 
     def run_and_update(self):
+        """
+        Run the competition, calculate attribute changes and apply them.
+
+        Returns:
+            The competition results
+        """
         self.run_competition()
-        self.calculate_attribute_changes()
-        self.apply_attribute_changes()
+        attribute_changes = self.calculate_attribute_changes()
+        db.insert_player_attributes_competition_effected(attribute_changes, self.competition_id)
+
+        return self.results
+
+
+# Example usage
+#if __name__ == "__main__":
+#    competition = Run5k(3)
+#    results = competition.run_and_update()
+#    print("Competition results:", results)
