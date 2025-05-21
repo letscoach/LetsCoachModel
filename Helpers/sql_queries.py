@@ -979,3 +979,43 @@ VALUES
   (1, '{token}', {match_id}, NOW());
 '''
 
+##################################COMPETITION ###################################
+
+GET_COMPETITION_PLAYERS = '''
+SELECT 
+    p.token, 
+    cp.competition_id,
+    JSON_OBJECTAGG(attr_name, attr_value) AS attributes
+FROM players p
+INNER JOIN competition_participants cp ON cp.token = p.token
+LEFT JOIN (
+    SELECT 
+        token,
+        attribute_name AS attr_name,
+        attribute_value AS attr_value
+    FROM (
+        SELECT pa.token, a.attribute_name, pa.attribute_value
+        FROM player_attributes pa
+        LEFT JOIN attributes a ON pa.attribute_id = a.attribute_id
+        UNION ALL
+        SELECT pda.token, a.attribute_name, pda.attribute_value
+        FROM player_dynamic_attributes pda
+        LEFT JOIN attributes a ON pda.attribute_id = a.attribute_id
+    ) all_attrs
+) attrs ON p.token = attrs.token
+WHERE cp.competition_id = {competition_id}
+GROUP BY p.token, cp.competition_id;
+'''
+
+INSERT_COMPETITION_RESULTS = '''
+INSERT INTO competition_results (
+   competition_id,
+    token,
+    score,
+    rank_position,
+    is_winner
+    )
+VALUES
+    ({competition_id}, '{token}', '{score}',{rank_position},'{is_winner}');
+'''
+################################## END COMPETITION ##############################

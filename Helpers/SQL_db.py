@@ -559,5 +559,49 @@ def insert_man_of_the_match(token, match_id ):
     query = sql_queries.INSERT_MAN_OF_THE_MATCH.format(token=token, match_id=match_id)
     exec_update_query(query)
 
+
+############################COMPETITIONS##############################
+def select_players_for_competition(competition_id):
+    query = sql_queries.GET_COMPETITION_PLAYERS.format(competition_id=competition_id)
+    data = exec_select_query(query)
+    tmp = [
+        {**x._asdict(), 'attributes': json.loads(x.attributes)}
+        for x in data
+    ]
+    return tmp
+
+
+#TODO: MAKE SURE THAT THE PLAYERS_DATA STRUCTURE IS:
+#[
+#   {'token' : '0xdeldewd',
+#    'attributes' : {attribute_name: delta},
+#    'is_winner' : OPTINAL 0,1,2 OR WITHOUT THIS FIELD!!
+#    'rank_position': NUMBER
+#    'score' : NUMBER
+#    },...
+# ]
+def insert_player_attributes_competition_effected(players_data, competition_id):
+    for key, player in players_data.items():
+        query = sql_queries.INSERT_COMPETITION_RESULTS
+        frsheness_attr = player['attributes'].get('Freshness')
+        if frsheness_attr:
+            del player['attributes']['Freshness']
+            set_player_freshness(frsheness_attr,'+',player['player_id'])
+
+        satisfaction_attr = player['attributes'].get('Satisfaction')
+        if satisfaction_attr:
+            del player['attributes']['Satisfaction']
+            set_player_satisfaction(satisfaction_attr,'+',player['token'])
+
+        attributes = {f"{ATTR.get(k, k)}": v for k, v in player['attributes'].items()}
+        query = query.format(competition_id=competition_id, token=player['token'],
+                             score=player.get('score',0), rank_position=player.get('rank_position',0),is_winner=player.get('is_winner','NULL'))
+        res = exec_update_query(query)
+        for attr_id, attr_value in attributes.items():
+            # TODO: Nissim! i need procedure that got the attributes json and update the player attributes table
+            sub_query = sql_queries._TEMPLATE_INSERT_IMPROVMENT_MATCH
+            sub_query = sub_query.format(player_id=player['token'], attr_delta=attr_value, attr_id=attr_id)
+            res1 = exec_update_query(sub_query)
+#########################END - COMPETITIONS###########################
 def init_mock_db():
     return None
