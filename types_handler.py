@@ -1,9 +1,9 @@
-from LetsCoachModel.Game.Matches import game_launcher
-from LetsCoachModel.Game.freshness_update import update_freshness_for_team
-from LetsCoachModel.Game.update_satisfaction import update_satisfaction_for_team
-from LetsCoachModel.Training.training import complete_training
-from LetsCoachModel.Competition.dash5k import Run5k
-from LetsCoachModel.Competition.dash100 import Run100
+from Game.Matches import game_launcher
+from Game.freshness_update import update_freshness_for_team
+from Game.update_satisfaction import update_satisfaction_for_team
+from Training.training import complete_training
+from Competitions.dash5k import Run5k
+from Competitions.dash100 import Run100
 
 def complete_training_handler(data):
     return complete_training(data.get('training_id'))

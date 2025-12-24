@@ -186,6 +186,10 @@ class GameProcessor:
             output = self.post_game_processor.process_post_game(team1_id, team2_id, team1_score, team2_score)
         elif self.game_type == 12:
             output = self.post_game_processor.process_must_win_game(team1_id, team2_id, team1_score, team2_score)
+        else:
+            # Default to regular post-game processing for other game types (e.g., 'league')
+            send_log_message(f"Game type {self.game_type} not explicitly handled, using default post-game processing")
+            output = self.post_game_processor.process_post_game(team1_id, team2_id, team1_score, team2_score)
         send_log_message("7.Insert into db all match data")
 
         db.insert_match_details(self.game_id, output.get('events', []))

@@ -28,9 +28,21 @@ def connect_with_connector() -> sqlalchemy.engine.base.Engine:
     except exceptions.DefaultCredentialsError:
         print("Error loading credentials from file.")
         return None
+    except Exception as e:
+        print(f"Error loading credentials: {e}")
+        # Try fallback to application default credentials
+        try:
+            credentials, project = google.auth.default()
+        except Exception as e2:
+            print(f"Fallback failed: {e2}")
+            return None
 
     # Initialize Cloud SQL connector
-    connector = Connector(ip_type, credentials=credentials)
+    try:
+        connector = Connector(ip_type, credentials=credentials)
+    except Exception as e:
+        print(f"Error initializing connector: {e}")
+        return None
 
     # Define a function to get the connection
     def getconn() -> pymysql.connections.Connection:
@@ -109,13 +121,26 @@ def exec_update_query(query):
 
 def set_attributes_dict():
     query = 'SELECT * FROM attributes'
-    data = exec_select_query(query)
-    data = [x._asdict() for x in data]
-    return {x['attribute_name'] : x['attribute_id'] for x in data}
+    try:
+        data = exec_select_query(query)
+        data = [x._asdict() for x in data]
+        return {x['attribute_name'] : x['attribute_id'] for x in data}
+    except Exception as e:
+        print(f"Warning: Could not load attributes dictionary: {e}")
+        return {}
 
 
-ATTR = set_attributes_dict()
-ATTR_REVERS =  {str(v): k for k, v in ATTR.items()}
+try:
+    ATTR = set_attributes_dict()
+except Exception as e:
+    print(f"Warning: Failed to initialize ATTR: {e}")
+    ATTR = {}
+
+try:
+    ATTR_REVERS =  {str(v): k for k, v in ATTR.items()}
+except Exception as e:
+    print(f"Warning: Failed to initialize ATTR_REVERS: {e}")
+    ATTR_REVERS = {}
 def update_player_freshness(token, freshness):
     query = sql_queries.UPDATE_FRESHNESS_VALUE.format(token=token, freshness_value=freshness)
     exec_update_query(query)
@@ -424,6 +449,16 @@ def get_current_matches():
     result = exec_select_query(query)
     result = [row._asdict() for row in result]
     return result
+
+def get_matches_by_match_day(match_day):
+    """
+    קבל משחקים לפי match_day ספציפי
+    """
+    query = sql_queries.SELECT_MATCHES_BY_MATCH_DAY.format(match_day=match_day)
+    result = exec_select_query(query)
+    result = [row._asdict() for row in result]
+    return result
+
 import json
 
 def get_match_details(match_id):

@@ -490,7 +490,14 @@ WHERE DATE(match_datetime) = CURRENT_DATE()
 AND HOUR(match_datetime) = HOUR(NOW())
 AND result IS NULL;
 '''
-# AND HOUR(match_datetime) = HOUR(CURRENT_TIME())
+
+SELECT_MATCHES_BY_MATCH_DAY = '''
+SELECT *
+FROM matches
+WHERE match_day = {match_day}
+AND result IS NULL
+ORDER BY match_datetime ASC;
+'''
 
 
 SELECT_MATCH_RESULT_DETAILS = '''
