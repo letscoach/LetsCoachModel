@@ -44,7 +44,8 @@ tables = {
         "match_day",
         "home_team_id",
         "away_team_id",
-        "match_datetime"
+        "match_datetime",
+        "kind"
     ]
 
 }
