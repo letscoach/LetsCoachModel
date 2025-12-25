@@ -70,18 +70,9 @@ def generate_schedule(league_id, start_date):
         # Rotate teams for the next week in the second round
         team_leagues = [team_leagues[0]] + team_leagues[-1:] + team_leagues[1:-1]
 
-    # Insert matches into the database
-    # Get league type (League or Friendly) from the leagues table
-    league_info = sql_db.get_league_by_id(league_id)
-    league_type = league_info.get('league_type', 'League') if league_info else 'League'
-    
-    # Get kind_id based on league type
-    league_kind_id = sql_db.get_match_kind_id(league_type)
-    if not league_kind_id:
-        league_kind_id = 1 if league_type == 'League' else 2  # Default: 1 for League, 2 for Friendly
-    
+    # Insert matches into the database with kind=1 (League)
     for match in schedule:
-        match['kind'] = league_kind_id
+        match['kind'] = 1
     sql_db.insert_init_matches(schedule)
 
 
@@ -136,16 +127,9 @@ def generate_schedule_single_round(league_id, start_date):
         league_msg += 'Round {match_day} | {match_datetime} | {home_team_id} vs {away_team_id}\n'.format(**i)
     telegram.send_log_message(f'{league_msg}')
     
-    # Add kind_id based on league type
-    league_info = sql_db.get_league_by_id(league_id)
-    league_type = league_info.get('league_type', 'League') if league_info else 'League'
-    
-    league_kind_id = sql_db.get_match_kind_id(league_type)
-    if not league_kind_id:
-        league_kind_id = 1 if league_type == 'League' else 2  # Default: 1 for League, 2 for Friendly
-    
+    # Add kind=1 (League) to all matches
     for match in schedule:
-        match['kind'] = league_kind_id
+        match['kind'] = 1
     
     sql_db.insert_init_matches(schedule)
     # for sc in schedule:
@@ -333,14 +317,11 @@ def generate_schedule_double_round(league_id, start_date, start_time_gmt, days_b
         league_msg += f"Round {m['match_day']} | {dt_str} | {m['home_team_id']} vs {m['away_team_id']}\n"
     telegram.send_log_message(league_msg)
 
-    # Add kind_id for League matches
-    league_kind_id = sql_db.get_match_kind_id('League')
-    if not league_kind_id:
-        league_kind_id = 1  # Default to League if not found
-    for match in schedule:
-        match['kind'] = league_kind_id
+    # Add kind=1 (League) to all matches
+    for match in full_schedule:
+        match['kind'] = 1
     
-    sql_db.insert_init_matches(schedule)
+    full_schedule = sql_db.insert_init_matches(full_schedule)
     for sc in full_schedule:
         create_task_for_match(sc)
 
