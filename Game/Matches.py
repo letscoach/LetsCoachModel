@@ -138,6 +138,7 @@ def game_launcher(match):
     output = game_processor.init_game(match['home_team_id'], match['away_team_id'])
     telegram.send_log_message(f'Match id : {match.get("match_id", "Not Available")} Completed!, Score: {output.get("result",{}).get("team1_score")}'
                               f'-{output.get("result",{}).get("team2_score")}')
+    return output
 # game_launcher(dict(match_id = 169,home_team_id=67,away_team_id=68  ))
 
 def get_current_matches():

@@ -1,9 +1,14 @@
-from Game.Matches import game_launcher
-from Game.freshness_update import update_freshness_for_team
-from Game.update_satisfaction import update_satisfaction_for_team
-from Training.training import complete_training
-from Competitions.dash5k import Run5k
-from Competitions.dash100 import Run100
+try:
+    from Game.Matches import game_launcher
+    from Game.freshness_update import update_freshness_for_team
+    from Game.update_satisfaction import update_satisfaction_for_team
+    from Training.training import complete_training
+    from Competitions.dash5k import Run5k
+    from Competitions.dash100 import Run100
+except Exception as e:
+    import traceback
+    print(f"ERROR during imports: {e}")
+    print(traceback.format_exc())
 
 def complete_training_handler(data):
     return complete_training(data.get('training_id'))
