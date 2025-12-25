@@ -73,9 +73,10 @@ def generate_schedule(league_id, start_date):
     # Insert matches into the database
     # Add kind_id for League matches
     league_kind_id = sql_db.get_match_kind_id('League')
+    if not league_kind_id:
+        league_kind_id = 1  # Default to League if not found
     for match in schedule:
-        if league_kind_id:
-            match['kind'] = league_kind_id
+        match['kind'] = league_kind_id
     sql_db.insert_init_matches(schedule)
 
 
@@ -132,11 +133,14 @@ def generate_schedule_single_round(league_id, start_date):
     
     # Add kind_id for League matches
     league_kind_id = sql_db.get_match_kind_id('League')
+    if not league_kind_id:
+        league_kind_id = 1  # Default to League if not found
     for match in schedule:
-        if league_kind_id:
-            match['kind'] = league_kind_id
+        match['kind'] = league_kind_id
     
     sql_db.insert_init_matches(schedule)
+    # for sc in schedule:
+    #     create_task_for_match(sc)
     telegram.send_log_message(f'Scheduling insert successfully! : {start_date}')
 
     return schedule
@@ -322,11 +326,12 @@ def generate_schedule_double_round(league_id, start_date, start_time_gmt, days_b
 
     # Add kind_id for League matches
     league_kind_id = sql_db.get_match_kind_id('League')
-    for match in full_schedule:
-        if league_kind_id:
-            match['kind'] = league_kind_id
-
-    full_schedule = sql_db.insert_init_matches(full_schedule)
+    if not league_kind_id:
+        league_kind_id = 1  # Default to League if not found
+    for match in schedule:
+        match['kind'] = league_kind_id
+    
+    sql_db.insert_init_matches(schedule)
     for sc in full_schedule:
         create_task_for_match(sc)
 
