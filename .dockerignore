@@ -1,0 +1,9 @@
+sql_cred.json
+google_api_cred.json
+__pycache__
+*.pyc
+.git
+.gitignore
+.DS_Store
+*.egg-info
+.pytest_cache

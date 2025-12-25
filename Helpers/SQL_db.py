@@ -627,5 +627,23 @@ def insert_player_attributes_competition_effected(players_data, competition_id):
             sub_query = sub_query.format(player_id=player['token'], attr_delta=attr_value, attr_id=attr_id)
             res1 = exec_update_query(sub_query)
 #########################END - COMPETITIONS###########################
+
+def get_match_kind_id(kind_name):
+    """
+    Get the match kind ID from the match_kinds table by kind name
+    Returns the ID (1 for League, 2 for Friendly, etc.)
+    """
+    try:
+        query = f"SELECT id FROM match_kinds WHERE name = '{kind_name}'"
+        result = exec_select_query(query)
+        if result:
+            return result[0][0]
+        else:
+            print(f"Warning: Match kind '{kind_name}' not found in match_kinds table")
+            return None
+    except Exception as e:
+        print(f"Error getting match kind ID: {e}")
+        return None
+
 def init_mock_db():
     return None

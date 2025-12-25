@@ -71,7 +71,13 @@ def generate_schedule(league_id, start_date):
         team_leagues = [team_leagues[0]] + team_leagues[-1:] + team_leagues[1:-1]
 
     # Insert matches into the database
+    # Add kind_id for League matches
+    league_kind_id = sql_db.get_match_kind_id('League')
+    for match in schedule:
+        if league_kind_id:
+            match['kind'] = league_kind_id
     sql_db.insert_init_matches(schedule)
+
 
 from datetime import datetime, timedelta
 
@@ -123,6 +129,13 @@ def generate_schedule_single_round(league_id, start_date):
     for i in schedule:
         league_msg += 'Round {match_day} | {match_datetime} | {home_team_id} vs {away_team_id}\n'.format(**i)
     telegram.send_log_message(f'{league_msg}')
+    
+    # Add kind_id for League matches
+    league_kind_id = sql_db.get_match_kind_id('League')
+    for match in schedule:
+        if league_kind_id:
+            match['kind'] = league_kind_id
+    
     sql_db.insert_init_matches(schedule)
     telegram.send_log_message(f'Scheduling insert successfully! : {start_date}')
 
