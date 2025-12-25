@@ -1,15 +1,48 @@
 import os
 import sys
-from Helpers.telegram_manager import send_log_message
-from flask import Flask, jsonify, request
+import traceback
 
 # הוסף את השורה הזו למצב development
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from types_handler import ACTION_MAP
-from scheduler import match_scheduler
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
+
+# Import dependencies with error handling
+try:
+    from Helpers.telegram_manager import send_log_message
+except Exception as e:
+    print(f"Error importing telegram_manager: {e}")
+    traceback.print_exc()
+    def send_log_message(msg):
+        print(f"[TELEGRAM] {msg}")
+
+try:
+    from types_handler import ACTION_MAP
+except Exception as e:
+    print(f"Error importing action handlers: {e}")
+    traceback.print_exc()
+    ACTION_MAP = {}
+
+# Import scheduler lazily - only when needed
+match_scheduler = None
+
+def get_scheduler():
+    global match_scheduler
+    if match_scheduler is None:
+        try:
+            from scheduler import match_scheduler as sched
+            match_scheduler = sched
+        except Exception as e:
+            print(f"Error importing scheduler: {e}")
+            traceback.print_exc()
+            class DummyScheduler:
+                is_running = False
+                def get_jobs(self):
+                    return []
+            match_scheduler = DummyScheduler()
+    return match_scheduler
 
 @app.route("/", methods=["POST"])
 def LetscoachModel():
@@ -41,7 +74,7 @@ def start_scheduler():
         data = request.get_json(silent=True) or {}
         check_interval = data.get('check_interval_minutes', 5)
         
-        match_scheduler.start(check_interval_minutes=check_interval)
+        get_scheduler().start(check_interval_minutes=check_interval)
         
         msg = f"✅ Scheduler התחיל - בדיקה כל {check_interval} דקות"
         send_log_message(msg)
@@ -56,7 +89,7 @@ def start_scheduler():
 def stop_scheduler():
     """עצור את ה-scheduler"""
     try:
-        match_scheduler.stop()
+        get_scheduler().stop()
         send_log_message("⏹️ Scheduler עוצר")
         return jsonify({"message": "Scheduler עוצר"}), 200
     except Exception as e:
@@ -69,7 +102,7 @@ def stop_scheduler():
 def pause_scheduler():
     """השהה את ה-scheduler"""
     try:
-        match_scheduler.pause()
+        get_scheduler().pause()
         send_log_message("⏸️ Scheduler משהוי")
         return jsonify({"message": "Scheduler משהוי"}), 200
     except Exception as e:
@@ -82,7 +115,7 @@ def pause_scheduler():
 def resume_scheduler():
     """המשך את ה-scheduler"""
     try:
-        match_scheduler.resume()
+        get_scheduler().resume()
         send_log_message("▶️ Scheduler מתחדש")
         return jsonify({"message": "Scheduler מתחדש"}), 200
     except Exception as e:
@@ -95,15 +128,16 @@ def resume_scheduler():
 def scheduler_status():
     """קבל את סטטוס ה-scheduler"""
     try:
+        scheduler = get_scheduler()
         status = {
-            "is_running": match_scheduler.is_running,
+            "is_running": scheduler.is_running,
             "jobs": [
                 {
                     "id": job.id,
                     "name": job.name,
                     "next_run_time": str(job.next_run_time)
                 }
-                for job in match_scheduler.get_jobs()
+                for job in scheduler.get_jobs()
             ]
         }
         return jsonify(status), 200
