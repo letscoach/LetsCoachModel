@@ -71,10 +71,15 @@ def generate_schedule(league_id, start_date):
         team_leagues = [team_leagues[0]] + team_leagues[-1:] + team_leagues[1:-1]
 
     # Insert matches into the database
-    # Add kind_id for League matches
-    league_kind_id = sql_db.get_match_kind_id('League')
+    # Get league type (League or Friendly) from the leagues table
+    league_info = sql_db.get_league_by_id(league_id)
+    league_type = league_info.get('league_type', 'League') if league_info else 'League'
+    
+    # Get kind_id based on league type
+    league_kind_id = sql_db.get_match_kind_id(league_type)
     if not league_kind_id:
-        league_kind_id = 1  # Default to League if not found
+        league_kind_id = 1 if league_type == 'League' else 2  # Default: 1 for League, 2 for Friendly
+    
     for match in schedule:
         match['kind'] = league_kind_id
     sql_db.insert_init_matches(schedule)
@@ -131,10 +136,14 @@ def generate_schedule_single_round(league_id, start_date):
         league_msg += 'Round {match_day} | {match_datetime} | {home_team_id} vs {away_team_id}\n'.format(**i)
     telegram.send_log_message(f'{league_msg}')
     
-    # Add kind_id for League matches
-    league_kind_id = sql_db.get_match_kind_id('League')
+    # Add kind_id based on league type
+    league_info = sql_db.get_league_by_id(league_id)
+    league_type = league_info.get('league_type', 'League') if league_info else 'League'
+    
+    league_kind_id = sql_db.get_match_kind_id(league_type)
     if not league_kind_id:
-        league_kind_id = 1  # Default to League if not found
+        league_kind_id = 1 if league_type == 'League' else 2  # Default: 1 for League, 2 for Friendly
+    
     for match in schedule:
         match['kind'] = league_kind_id
     

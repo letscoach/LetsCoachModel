@@ -389,6 +389,15 @@ def select_league_table(league_id=''):
     return result
 
 
+def get_league_by_id(league_id):
+    """Get league info by ID to determine league type"""
+    query = f"SELECT * FROM leagues WHERE league_id = {league_id}"
+    result = exec_select_query(query)
+    if result:
+        return result[0]._asdict()
+    return None
+
+
 def insert_init_matches(matches):
     for match in matches:
         query = build_insert_query("matches")
