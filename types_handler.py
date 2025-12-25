@@ -25,6 +25,7 @@ def match_handler(data):
         'away_team_id': data.get('away_team_id'),
         'home_team_id': data.get('home_team_id'),
         'match_id': data.get('match_id'),
+        'kind': data.get('kind', 'league'),
     })
 
 def competition_handler(data):
