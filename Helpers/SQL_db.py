@@ -19,23 +19,12 @@ def connect_with_connector() -> sqlalchemy.engine.base.Engine:
     db_name = 'main_game'  # e.g. 'my-database'
     ip_type = IPTypes.PUBLIC  # Choose PUBLIC or PRIVATE depending on your configuration
 
-    # Path to your service account key JSON file
-    credentials_path = os.path.join(os.path.dirname(__file__), "sql_cred.json")
-
-    # Load credentials manually
+    # Use default credentials (works in Cloud Run automatically)
     try:
-        credentials, project = google.auth.load_credentials_from_file(credentials_path)
-    except exceptions.DefaultCredentialsError:
-        print("Error loading credentials from file.")
-        return None
+        credentials, project = google.auth.default()
     except Exception as e:
         print(f"Error loading credentials: {e}")
-        # Try fallback to application default credentials
-        try:
-            credentials, project = google.auth.default()
-        except Exception as e2:
-            print(f"Fallback failed: {e2}")
-            return None
+        return None
 
     # Initialize Cloud SQL connector
     try:
