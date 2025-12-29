@@ -1,60 +1,38 @@
 import os
+import json
 
-import google.auth
-from google.cloud.sql.connector import Connector, IPTypes
 import pymysql
-import sqlalchemy
-from google.auth import exceptions
-from sqlalchemy import text
 from Helpers.table_def import tables as DB_TABLES
 import Helpers.sql_queries as sql_queries
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
+pool = None
 
-def connect_with_connector() -> sqlalchemy.engine.base.Engine:
-    instance_connection_name = 'zinc-strategy-446518-s7:us-central1:letscoach-dev'
-    db_user = 'me'  # e.g. 'my-db-user'
-    db_pass = 'Ab123456'  # e.g. 'my-db-password'
-    db_name = 'main_game'  # e.g. 'my-database'
-    ip_type = IPTypes.PUBLIC  # Choose PUBLIC or PRIVATE depending on your configuration
-
-    # Use default credentials (works in Cloud Run automatically)
+def connect_via_proxy():
+    """Connect to Google Cloud SQL via Cloud SQL Auth Proxy using direct pymysql"""
     try:
-        credentials, project = google.auth.default()
-    except Exception as e:
-        print(f"Error loading credentials: {e}")
-        return None
-
-    # Initialize Cloud SQL connector
-    try:
-        connector = Connector(ip_type, credentials=credentials)
-    except Exception as e:
-        print(f"Error initializing connector: {e}")
-        return None
-
-    # Define a function to get the connection
-    def getconn() -> pymysql.connections.Connection:
-        conn = connector.connect(
-            instance_connection_name,
-            "pymysql",
-            user=db_user,
-            password=db_pass,
-            db=db_name,
+        connection = pymysql.connect(
+            host='127.0.0.1',
+            port=3306,
+            user='me',
+            password='Ab123456',
+            database='main_game',
+            charset='utf8mb4',
+            cursorclass=pymysql.cursors.DictCursor
         )
-        return conn
+        print("✅ Connected to Google Cloud SQL via proxy!")
+        return connection
+    except Exception as e:
+        print(f"❌ Error connecting via proxy: {e}")
+        return None
 
-    # Create SQLAlchemy engine with the correct connection string
-    pool = sqlalchemy.create_engine(
-        f"mysql+pymysql://{db_user}:{db_pass}@127.0.0.1/{db_name}",
-        creator=getconn,
-    )
-    return pool
+# Connect via proxy
+print("🔍 Connecting to Google Cloud SQL via proxy...")
+pool = connect_via_proxy()
 
-
-# Connect to the database and execute a query
-pool = connect_with_connector()
-
+if pool is None:
+    print("❌ Connection failed!")
 
 def build_insert_query(table_name: str) -> str:
     columns = DB_TABLES[table_name]
@@ -71,19 +49,19 @@ def build_insert_query(table_name: str) -> str:
 
 def exec_insert_query(query, params):
     try:
-        with pool.connect() as db_conn:
+        with pool.cursor() as db_conn:
             if type(query) is list:
                 for ind, quer in enumerate(query):
-                    result = db_conn.execute(text(quer), params[ind])
-                    db_conn.connection.commit()
+                    result = db_conn.execute(quer, params[ind])
+                    pool.commit()
             else:
-                result = db_conn.execute(text(query), params)
-                db_conn.connection.commit()  # Commit after the insert
+                result = db_conn.execute(query, params)
+                pool.commit()  # Commit after the insert
 
             print("Insert successful!")
-            return result.lastrowid
+            return db_conn.lastrowid
     except IntegrityError as e:
-        if 'Duplicate entry' in str(e.orig):
+        if 'Duplicate entry' in str(e):
             raise Exception(f"Duplicate value")
         else:
             raise Exception(f"An unexpected error occurred: {str(e)}")
@@ -91,8 +69,9 @@ def exec_insert_query(query, params):
 
 def exec_select_query(query):
     try:
-        with pool.connect() as db_conn:
-            result = db_conn.execute(text(query)).fetchall()
+        with pool.cursor() as db_conn:
+            db_conn.execute(query)
+            result = db_conn.fetchall()
 
             return result
     except Exception as e:
@@ -101,9 +80,9 @@ def exec_select_query(query):
 
 def exec_update_query(query):
     try:
-        with pool.connect() as db_conn:
-            result = db_conn.execute(text(query))
-            db_conn.connection.commit()
+        with pool.cursor() as db_conn:
+            result = db_conn.execute(query)
+            pool.commit()
             return result
     except Exception as e:
         raise e
@@ -112,7 +91,6 @@ def set_attributes_dict():
     query = 'SELECT * FROM attributes'
     try:
         data = exec_select_query(query)
-        data = [x._asdict() for x in data]
         return {x['attribute_name'] : x['attribute_id'] for x in data}
     except Exception as e:
         print(f"Warning: Could not load attributes dictionary: {e}")
@@ -144,7 +122,6 @@ def set_player_satisfaction(sat_delta, operator ,token):
 def select_player_freshness(token):
     query = sql_queries.SELECT_FRESHNESS_VALUE.format(token=token)
     rows = exec_select_query(query)
-    rows = [row._asdict() for row in rows]
     return rows[0] if len(rows)> 0 else None
 
 def insert_player_freshness(freshness,token):
@@ -182,7 +159,6 @@ def string_to_dict(input_string):
 def get_draft_players(status_id, batch, limit):
     query = sql_queries.GET_PLAYERS.format(status_id=status_id, batch=batch, limit=limit)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     for row in result:
         row['properties'] = string_to_dict(row['attributes'])
     return result
@@ -191,7 +167,6 @@ def get_draft_players(status_id, batch, limit):
 def get_team_players(team_id):
     query = sql_queries.GET_TEAM_PLAYERS.format(team_id=team_id)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     for row in result:
         row['properties'] = string_to_dict(row['attributes'])
     return {x['token']: {"properties": x['properties'], "player_id": x['token']} for x in result}
@@ -200,7 +175,6 @@ def get_team_players(team_id):
 def get_team_default_formation(team_id):
     query = sql_queries.GET_TEAM_DEFAULT_FORMATION.format(team_id=team_id)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     return None if len(result) == 0 else json.loads(result[0]['formation_positions'])
 
 
@@ -270,7 +244,6 @@ def insert_opening_formations(match_id):
 def get_player_by_token(token):
     query = sql_queries.GET_PLAYER_BY_TOKEN.format(token=token)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     for row in result:
         row['properties'] = string_to_dict(row['attributes'])
     if len(result) >0:
@@ -280,7 +253,6 @@ def get_player_by_token(token):
 def get_player_by_userid(user_id):
     query = sql_queries.GET_ACCOUNT_PLAYERS.format(user_id=user_id)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     for row in result:
         row['properties'] = string_to_dict(row['attributes'])
     return result
@@ -314,13 +286,11 @@ def insert_team(team_data):
 def get_team_by_id(user_id):
     query = sql_queries.GET_TEAM.format(user_id=user_id)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     return None if len(result) == 0 else result[0]
 
 
 def get_formations(team_id):
     result = exec_select_query(sql_queries.GET_FORMATIONS.format(team_id=team_id))
-    result = [row._asdict() for row in result]
     fields = [
         "team_id",
         "formation_id",
@@ -354,7 +324,6 @@ def reset_default_formation(team_id):
 def select_all_leagues(user_id=''):
     query = sql_queries.SELECT_ALL_LEAGUES.format(user_id=user_id)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     return result
 
 def join_league(team_id, league_id):
@@ -371,21 +340,18 @@ def join_league(team_id, league_id):
 def select_team_leagues(team_id=''):
     query = sql_queries.SELECT_TEAM_LEAGUES.format(team_id=team_id)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     return result
 
 
 def select_league_teams(league_id):
     query = sql_queries.SELECT_LEAGUE_TEAMS.format(league_id=league_id)
     result = exec_select_query(query)
-    result = [row._asdict()['team_id'] for row in result]
-    return result
+    return [row['team_id'] for row in result]
 
 
 def select_league_table(league_id=''):
     query = sql_queries.SELECT_LEAGUE_TABLE.format(league_id=league_id)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     return result
 
 
@@ -394,12 +360,17 @@ def get_league_by_id(league_id):
     query = f"SELECT * FROM leagues WHERE league_id = {league_id}"
     result = exec_select_query(query)
     if result:
-        return result[0]._asdict()
+        return result[0]
     return None
 
 
 def insert_init_matches(matches):
     for match in matches:
+        # Ensure 'kind' exists before inserting
+        if 'kind' not in match or match['kind'] is None:
+            print(f"⚠️ Warning: Match missing 'kind' field! Setting to 1 (League) by default")
+            match['kind'] = 1  # Default to League match
+            
         query = build_insert_query("matches")
         res = exec_insert_query(query, match)
         match['match_id'] = res
@@ -421,19 +392,18 @@ def get_matches_by_league_id(league_id,match_day = None):
     try:
         if not match_day:
             match_day = exec_select_query(sql_queries.GET_CURRENT_OR_NEXT_MATCH_DAY)
-            match_day = match_day[0]._asdict()['match_day']
+            match_day = match_day[0]['match_day']
             pass
 
         query = sql_queries.SELECT_MATCHES_BY_LEAGUE_ID.format(league_id=league_id,match_day=match_day)
         result = exec_select_query(query)
-        result = [row._asdict() for row in result]
         return result
     except:
         return []
 
 def get_next_time_match(team_id):
     data = exec_select_query(sql_queries.SELECT_NEXT_TIME_MATCH.format(team_id=team_id))
-    data =  data[0]._asdict()['time_until_match' ]if len(data) > 0 else None
+    data =  data[0]['time_until_match' ]if len(data) > 0 else None
     if data:
         parts = data.split(", ")
         keys = ["days", "hours", "minutes", "seconds"]
@@ -445,7 +415,6 @@ def get_next_time_match(team_id):
 def get_current_matches():
     query = sql_queries.SELECT_MATCHES_FOR_CURRENT_DAY
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     return result
 
 def get_matches_by_match_day(match_day):
@@ -454,10 +423,8 @@ def get_matches_by_match_day(match_day):
     """
     query = sql_queries.SELECT_MATCHES_BY_MATCH_DAY.format(match_day=match_day)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     return result
 
-import json
 
 def get_match_details(match_id):
    
@@ -469,7 +436,7 @@ def get_match_details(match_id):
     additional_result = exec_select_query(query_additional_details)
 
     if result:
-        match_details = result[0]._asdict()
+        match_details = result[0]
         if match_details.get('home_team_details'):
             match_details['home_team_details'] = json.loads(match_details['home_team_details'])
             for p in match_details['home_team_details']['players']:
@@ -486,7 +453,7 @@ def get_match_details(match_id):
    
     if additional_result:
 
-        additional_match_details = [x._asdict() for x in additional_result]
+        additional_match_details = [x for x in additional_result]
         for amd in additional_match_details:
             amd['action_timestamp'] = str(amd['action_timestamp'])
     else:
@@ -498,14 +465,12 @@ def get_match_details(match_id):
 def get_matches_by_team_id(team_id=''):
     query = sql_queries.SELECT_MATCHES_BY_LEAGUE_ID.format(team_id=team_id)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     return result
 
 
 def get_training_types():
     query = sql_queries.SELECT_TRAINING_TYPES
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     for res in result:
         res['affected_attributes'] = json.loads(res['affected_attributes'])
     return result
@@ -514,7 +479,6 @@ def get_training_types():
 def get_training_levels():
     query = sql_queries.SELECT_TRAINING_LEVELS
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     return result
 
 def set_team_training(trainig_parmaters):
@@ -530,14 +494,12 @@ def is_trainable(team_id):
 def get_team_training(team_id):
     query = sql_queries.SELECT_TEAM_TRAININGS.format(team_id=team_id)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     return result
 
 
 def get_team_training_by_id(training_id):
     query = sql_queries.SELECT_TEAM_TRAINING_BY_ID.format(training_id=training_id)
     result = exec_select_query(query)
-    result = [row._asdict() for row in result]
     return result
 
 def insert_match_details(match_id, details):
@@ -560,32 +522,29 @@ def set_formations_for_next_mathces():
 def get_tarainable_players(team_id):
     query = sql_queries.GET_TRAINABLE_PLAYERS.format(team_id=team_id)
     data = exec_select_query(query)
-    return [x._asdict() for x in data]
+    return data
 
 def get_training_team_history(team_id, offset):
     query = sql_queries.SELECT_TRAINING_TEAM_HISTORY.format(team_id=team_id, offset=offset)
     data = exec_select_query(query)
-    return [x._asdict() for x in data]
+    return data
 
 def get_training_details(training_id):
     query = sql_queries.SELECT_TRAINING_DETAILS.format(training_id=training_id)
     data = exec_select_query(query)
-    return [x._asdict() for x in data]
+    return data
 
 
 #TODO: Tiko - here your freshness calculator
 def get_freshness_last_effort(token):
     query = sql_queries.GET_FRESHNESS_LAST_EFFORT.format(token=token)
     data = exec_select_query(query)
-    return len(data) > 0 and [x._asdict() for x in data][0] or {}
+    return len(data) > 0 and data[0] or {}
 # get_freshness_last_effort("a0x24291884383d3fbe2bc74ae452d42cced24a85fc24")
 
 def get_training_history_by_team_id(team_id):
     query = sql_queries.SELECT_PLAYERS_TARINING_HISTORY_BY_TEAM_ID.format(team_id = team_id)
     data = exec_select_query(query)
-    data =  [x._asdict() for x in data]
-    # for d in data:
-    #     d['players'] = json.loads(d['players'])
     return data
 
 def insert_man_of_the_match(token, match_id ):
@@ -598,7 +557,7 @@ def select_players_for_competition(competition_id):
     query = sql_queries.GET_COMPETITION_PLAYERS.format(competition_id=competition_id)
     data = exec_select_query(query)
     tmp = [
-        {**x._asdict(), 'attributes': json.loads(x.attributes)}
+        {**x, 'attributes': json.loads(x['attributes'])}
         for x in data
     ]
     return tmp
@@ -653,6 +612,75 @@ def get_match_kind_id(kind_name):
     except Exception as e:
         print(f"Error getting match kind ID: {e}")
         return None
+
+def get_match_kind_factors(match_kind_id):
+    """
+    Get the factors for a specific match kind from the database
+    Returns dict with attribute_delta_factor, freshness_delta_factor, satisfaction_delta_factor
+    """
+    try:
+        query = f"""
+        SELECT 
+            id,
+            name,
+            attribute_delta_factor,
+            freshness_delta_factor,
+            satisfaction_delta_factor
+        FROM match_kinds 
+        WHERE id = {match_kind_id}
+        """
+        result = exec_select_query(query)
+        if result:
+            row = result[0]
+            return {
+                'kind_id': row.get('id', match_kind_id),
+                'name': row.get('name', 'Unknown'),
+                'attribute_delta_factor': float(row.get('attribute_delta_factor', 1.0)),
+                'freshness_delta_factor': float(row.get('freshness_delta_factor', 1.0)),
+                'satisfaction_delta_factor': float(row.get('satisfaction_delta_factor', 1.0))
+            }
+        else:
+            print(f"⚠️ Warning: Match kind ID {match_kind_id} not found in match_kinds table. Using default factors.")
+            # Return default factors (League)
+            return {
+                'kind_id': match_kind_id,
+                'name': 'Unknown',
+                'attribute_delta_factor': 1.0,
+                'freshness_delta_factor': 1.0,
+                'satisfaction_delta_factor': 1.0
+            }
+    except Exception as e:
+        print(f"❌ Error getting match kind factors: {e}. Using default factors.")
+        return {
+            'kind_id': match_kind_id,
+            'name': 'Unknown',
+            'attribute_delta_factor': 1.0,
+            'freshness_delta_factor': 1.0,
+            'satisfaction_delta_factor': 1.0
+        }
+
+def get_all_match_kinds():
+    """
+    Get all match kinds from the database
+    Returns list of dicts with all match kind information
+    """
+    try:
+        query = """
+        SELECT 
+            id,
+            name,
+            attribute_delta_factor,
+            freshness_delta_factor,
+            satisfaction_delta_factor,
+            description
+        FROM match_kinds
+        ORDER BY id
+        """
+        result = exec_select_query(query)
+        return result
+    except Exception as e:
+        print(f"Error getting all match kinds: {e}")
+        return []
 
 def init_mock_db():
     return None

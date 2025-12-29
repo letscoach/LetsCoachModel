@@ -3,7 +3,6 @@ import random
 from Game import formation_grader
 from Helpers import SQL_db as db
 
-
 def round_up_to_half(score):
     return round((score * 2 + 1) // 1) / 2
 
@@ -446,13 +445,21 @@ class PostGameProcessor:
             })
         return player_stories
 
-    def process_post_game(self, team1_id, team2_id, team1_score, team2_score):
+    def process_post_game(self, team1_id, team2_id, team1_score, team2_score, match_kind=1):
+        """
+        Process post-game calculations with match kind factors
+        
+        :param match_kind: Match kind ID (1=League, 2=Friendly, 3=Cup, etc.)
+        """
+        # Get match kind factors
+        factors = db.get_match_kind_factors(match_kind)
+        print(f"🎮 Processing {factors['name']} match with factors: attribute={factors['attribute_delta_factor']}, freshness={factors['freshness_delta_factor']}, satisfaction={factors['satisfaction_delta_factor']}")
+        
         team1_formation = self.get_team_formation(team1_id)
         team2_formation = self.get_team_formation(team2_id)
 
         team1_total = db.get_team_players(team1_id)
         team2_total = db.get_team_players(team2_id)
-
 
         team1_players = self.fetch_player_data(team1_formation)
         team2_players = self.fetch_player_data(team2_formation)
@@ -499,6 +506,16 @@ class PostGameProcessor:
             )
 
             attribute_updates = self.random_attribute_updates(player, team_won)
+            
+            # Apply match kind factor to attribute deltas
+            attribute_updates = {
+                attr: delta * factors['attribute_delta_factor']
+                for attr, delta in attribute_updates.items()
+            }
+            
+            # Calculate freshness drop and apply match kind factor
+            base_freshness_delta = -self.calculate_freshness_drop(player['properties']['Endurance'])
+            freshness_delta = base_freshness_delta * factors['freshness_delta_factor']
 
             results.append({
                 "player_id": player["player_id"],
@@ -520,12 +537,19 @@ class PostGameProcessor:
                     "injured": story.get("injured", False),
                     "punished": story.get("punished", False),
                     "attribute_deltas": attribute_updates,
-                    "freshness_delta": -self.calculate_freshness_drop(player['properties']['Endurance']),
+                    "freshness_delta": freshness_delta,
                 }
             })
 
         man_of_the_match = calc_man_of_the_match(results)
         SatisfactionCalculator.calculate_satisfaction_changes(results, team1_score, team2_score, man_of_the_match)
+        
+        # Apply match kind factor to satisfaction deltas
+        for result in results:
+            if 'satisfaction_delta' in result['performance']:
+                result['performance']['satisfaction_delta'] = int(
+                    result['performance']['satisfaction_delta'] * factors['satisfaction_delta_factor']
+                )
 
         SatisfactionCalculator.satisfaction_change_for_non_players(non_players)
         return {
@@ -902,7 +926,7 @@ class PostGameProcessor:
                 "player_data": player["name"],
                 "performance": {
                     "overall_score": 3.0 + (0.5 if team_won_shootout else 0) +
-                                     (0.5 if scored_penalty else 0) -
+                                     (0.5 if scored_penalty else 0) - 
                                      (0.5 if took_penalty and not scored_penalty else 0),
                     "scored_goal": 0,
                     "assist": 0,
@@ -1250,8 +1274,13 @@ class PostGameProcessor:
 
         return merged_ps
 
-    def process_post_game_live(self, team1_id, team2_id, team1_score, team2_score, min_start, min_end):
-        output = self.process_post_game(team1_id, team2_id, team1_score, team2_score)
+    def process_post_game_live(self, team1_id, team2_id, team1_score, team2_score, min_start, min_end, match_kind=1):
+        """
+        Process a live segment of a match with match kind factors
+        
+        :param match_kind: Match kind ID (1=League, 2=Friendly, 3=Cup, etc.)
+        """
+        output = self.process_post_game(team1_id, team2_id, team1_score, team2_score, match_kind=match_kind)
         partial_output = self.adapt_output_to_partial(output, team1_id, team2_id, min_start, min_end)
         return partial_output
 

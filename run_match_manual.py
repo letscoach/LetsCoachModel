@@ -6,7 +6,7 @@
 import sys
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-sys.path.insert(0, 'c:\\Users\\gideo\\PycharmProjects\\LetsCoachModel')
+sys.path.insert(0, 'c:\\Users\\gideo\\PycharmProjects\\LetsCoachModel2')
 
 from datetime import datetime
 from Helpers.SQL_db import get_matches_by_match_day

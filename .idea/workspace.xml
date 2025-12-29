@@ -5,12 +5,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e0f44101-cae1-4f69-86ec-cd97578cb509" name="Changes" comment="cloud integration">
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/SQL Commands" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/google_api_cred.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/google_cloud_helpers.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/.dockerignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Competitions/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/run_match.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/run_match_manual.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/scheduler.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../LetsCoachModel/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/Helpers/telegram_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/telegram_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/Game/Matches.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/Matches.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/Game/game_hub.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/game_hub.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/Helpers/SQL_db.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/SQL_db.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/Helpers/sql_queries.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/sql_queries.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/Helpers/table_def.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/table_def.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../LetsCoachModel/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/types_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/types_handler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run_match_manual.py" beforeDir="false" afterPath="$PROJECT_DIR$/run_match_manual.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,9 +38,9 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../LetsCoachModel" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 3
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 3
+}</component>
   <component name="ProjectId" id="2tu82O9M30obGJd12wAvbQfkPHs" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <ConfirmationsSetting value="2" id="Add" />
@@ -40,12 +51,20 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Python.Matches.executor": "Run",
     "Python.main (1).executor": "Debug",
+    "Python.run_match_manual.executor": "Debug",
     "Python.telegram_manager.executor": "Debug",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/projects/letsCoachBackend/LetsCoachModel/LetsCoachModel/Helpers"
+    "git-widget-placeholder": "Merging DEV",
+    "last_opened_file_path": "C:/projects/letsCoachBackend/LetsCoachModel/LetsCoachModel/Helpers",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -57,7 +76,7 @@
       <recent name="C:\projects\letsCoachBackend\LetsCoachModel\pythonProject\Training" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.main (1)">
+  <component name="RunManager">
     <configuration name="main (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pythonProject" />
       <option name="ENV_FILES" value="" />
@@ -71,6 +90,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../LetsCoachModel/main.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -93,6 +113,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -115,6 +136,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../LetsCoachModel/Helpers/telegram_manager.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -134,7 +156,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-50da183f06c8-d3b881c8e49f-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-233.13135.95" />
+        <option value="bundled-python-sdk-50da183f06c8-2887949eec09-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-233.13135.95" />
       </set>
     </attachedChunks>
   </component>
@@ -146,6 +168,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1741190390728</updated>
+      <workItem from="1766737181437" duration="2508000" />
     </task>
     <task id="LOCAL-00001" summary="init model repo">
       <option name="closed" value="true" />
@@ -166,6 +189,20 @@
     <option name="localTasksCounter" value="3" />
     <servers />
   </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="init model repo" />
     <MESSAGE value="cloud integration" />
@@ -176,7 +213,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/../LetsCoachModel/main.py</url>
-          <line>8</line>
+          <line>1</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -190,31 +227,60 @@
           <option name="timeStamp" value="4" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/../LetsCoachModel/Game/game_hub.py</url>
-          <line>189</line>
-          <option name="timeStamp" value="5" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/../LetsCoachModel/main.py</url>
-          <line>15</line>
+          <line>6</line>
           <option name="timeStamp" value="6" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/../LetsCoachModel/main.py</url>
-          <line>17</line>
+          <line>8</line>
           <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/../LetsCoachModel/main.py</url>
-          <line>19</line>
+          <line>10</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/../LetsCoachModel/main.py</url>
-          <line>18</line>
+          <line>9</line>
           <option name="timeStamp" value="9" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/../LetsCoachModel/Helpers/SQL_db.py</url>
+          <line>68</line>
+          <option name="timeStamp" value="10" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/../LetsCoachModel/Game/Matches.py</url>
+          <line>75</line>
+          <option name="timeStamp" value="11" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/../LetsCoachModel/Game/Matches.py</url>
+          <line>70</line>
+          <option name="timeStamp" value="12" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/../LetsCoachModel/Game/Matches.py</url>
+          <line>12</line>
+          <option name="timeStamp" value="13" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/../LetsCoachModel/Game/Matches.py</url>
+          <line>141</line>
+          <option name="timeStamp" value="14" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Helpers/SQL_db.py</url>
+          <line>22</line>
+          <option name="timeStamp" value="15" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/LetsCoachModel2$Matches.coverage" NAME="Matches Coverage Results" MODIFIED="1766738389176" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../LetsCoachModel/Game" />
+    <SUITE FILE_PATH="coverage/LetsCoachModel2$run_match_manual.coverage" NAME="run_match_manual Coverage Results" MODIFIED="1766738808290" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../LetsCoachModel" />
   </component>
 </project>
