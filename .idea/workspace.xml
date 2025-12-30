@@ -5,23 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e0f44101-cae1-4f69-86ec-cd97578cb509" name="Changes" comment="cloud integration">
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/.dockerignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/Competitions/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/run_match.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/run_match_manual.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../LetsCoachModel/scheduler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../LetsCoachModel/Game/Matches.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/Matches.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/Game/game_hub.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/Game/game_hub.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/Helpers/SQL_db.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/SQL_db.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/Helpers/sql_queries.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/sql_queries.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/Helpers/table_def.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/Helpers/table_def.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../LetsCoachModel/types_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/../LetsCoachModel/types_handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/run_match_manual.py" beforeDir="false" afterPath="$PROJECT_DIR$/run_match_manual.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -57,7 +43,7 @@
     "Python.telegram_manager.executor": "Debug",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "Merging DEV",
+    "git-widget-placeholder": "DEV",
     "last_opened_file_path": "C:/projects/letsCoachBackend/LetsCoachModel/LetsCoachModel/Helpers",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -168,7 +154,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1741190390728</updated>
-      <workItem from="1766737181437" duration="2508000" />
+      <workItem from="1766737181437" duration="3457000" />
     </task>
     <task id="LOCAL-00001" summary="init model repo">
       <option name="closed" value="true" />
@@ -273,7 +259,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Helpers/SQL_db.py</url>
-          <line>22</line>
+          <line>10</line>
           <option name="timeStamp" value="15" />
         </line-breakpoint>
       </breakpoints>

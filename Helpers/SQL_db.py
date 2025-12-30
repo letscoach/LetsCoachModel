@@ -563,15 +563,6 @@ def select_players_for_competition(competition_id):
     return tmp
 
 
-#TODO: MAKE SURE THAT THE PLAYERS_DATA STRUCTURE IS:
-#[
-#   {'token' : '0xdeldewd',
-#    'attributes' : {attribute_name: delta},
-#    'is_winner' : OPTINAL 0,1,2 OR WITHOUT THIS FIELD!!
-#    'rank_position': NUMBER
-#    'score' : NUMBER
-#    },...
-# ]
 def insert_player_attributes_competition_effected(players_data, competition_id):
     for key, player in players_data.items():
         query = sql_queries.INSERT_COMPETITION_RESULTS
@@ -594,6 +585,28 @@ def insert_player_attributes_competition_effected(players_data, competition_id):
             sub_query = sql_queries._TEMPLATE_INSERT_IMPROVMENT_MATCH
             sub_query = sub_query.format(player_id=player['token'], attr_delta=attr_value, attr_id=attr_id)
             res1 = exec_update_query(sub_query)
+
+
+def get_current_competitions():
+    """
+    Get all competitions scheduled to run now (within their time window)
+    Status 14 = Scheduled/Active
+    Returns list of competition dicts
+    """
+    query = sql_queries.SELECT_COMPETITIONS_FOR_CURRENT_TIME
+    result = exec_select_query(query)
+    return result
+
+
+def update_competition_status(competition_id, status_id):
+    """
+    Update competition status
+    Status IDs: 14=Scheduled, 15=Completed, etc.
+    """
+    query = sql_queries.UPDATE_COMPETITION_STATUS.format(competition_id=competition_id, status_id=status_id)
+    res = exec_update_query(query)
+    return res
+
 #########################END - COMPETITIONS###########################
 
 def get_match_kind_id(kind_name):

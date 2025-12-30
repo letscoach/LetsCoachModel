@@ -834,8 +834,8 @@ SELECT
     tt.start_time,
     tt.end_time,
     tt.creation_time,
-    tt_type.training_name,
-    tt_intensity.intensity_name
+    training_types.training_name,
+    training_intensities.intensity_name
 FROM team_training tt
 JOIN teams t ON tt.team_id = t.team_id
 JOIN training_types tt_type ON tt.training_type_id = tt_type.training_id
@@ -958,6 +958,7 @@ ORDER BY a.action_name ASC, action_count DESC;
 '''
 GET_CURRENT_TRAINING_BY_TEAM = '''
 
+
 '''
 
 
@@ -1025,4 +1026,27 @@ INSERT INTO competition_results (
 VALUES
     ({competition_id}, '{token}', '{score}',{rank_position},'{is_winner}');
 '''
+
+SELECT_COMPETITIONS_FOR_CURRENT_TIME = '''
+SELECT 
+    c.id as competition_id,
+    c.competition_type_id,
+    ct.name as competition_type_name,
+    c.start_time,
+    c.end_time,
+    c.status_id,
+    c.group_id
+FROM competitions c
+JOIN competition_types ct ON c.competition_type_id = ct.id
+WHERE c.start_time <= NOW()
+AND c.end_time >= NOW()
+AND c.status_id = 14;
+'''
+
+UPDATE_COMPETITION_STATUS = '''
+UPDATE competitions
+SET status_id = {status_id}
+WHERE id = {competition_id};
+'''
+
 ################################## END COMPETITION ##############################
