@@ -7,7 +7,7 @@ except Exception as e:
 
 try:
     from Competitions.dash100 import Dash100
-    from Competitions.dash5k import Dash5K
+    from Competitions.dash5k import Run5k
 except Exception as e:
     import traceback
     print(f"ERROR importing competitions: {e}")
@@ -47,9 +47,9 @@ def competition_handler(data):
                 return "Error: Dash100 handler not loaded"
         elif competition_type_id == 2:
             # Dash5k competition
-            if Dash5K:
+            if Run5k:
                 logger.info(f"Starting Dash5K competition {competition_id}")
-                competition = Dash5K(competition_id)
+                competition = Run5k(competition_id)
                 results = competition.run_and_update()
                 logger.info(f"Dash5K competition {competition_id} completed")
                 return f"Dash5k competition {competition_id} completed with {len(results)} results"
