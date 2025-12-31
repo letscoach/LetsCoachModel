@@ -3,41 +3,49 @@ import json
 import time
 
 import pymysql
+from google.cloud.sql.connector import Connector
 from Helpers.table_def import tables as DB_TABLES
 import Helpers.sql_queries as sql_queries
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
 pool = None
+connector = None
 MAX_RETRIES = 3
 RETRY_DELAY = 1  # seconds
 
-def connect_via_proxy():
-    """Connect to Google Cloud SQL via Cloud SQL Auth Proxy using direct pymysql"""
+def connect_with_connector():
+    """Connect to Google Cloud SQL using Cloud SQL Python Connector"""
+    global connector
+    
     for attempt in range(MAX_RETRIES):
         try:
-            connection = pymysql.connect(
-                host='127.0.0.1',
-                port=3306,
-                user='me',
-                password='Ab123456',
-                database='main_game',
-                charset='utf8mb4',
+            # Initialize Connector if not already
+            if connector is None:
+                connector = Connector()
+            
+            # Get connection using Cloud SQL instance connection name
+            conn = connector.connect(
+                "zinc-strategy-446518-s7:us-central1:letscoach-dev",
+                "pymysql",
+                user="me",
+                password="Ab123456",
+                db="main_game",
                 cursorclass=pymysql.cursors.DictCursor
             )
-            print("✅ Connected to Google Cloud SQL via proxy!")
-            return connection
+            print("✅ Connected to Google Cloud SQL via Cloud SQL Connector!")
+            return conn
         except Exception as e:
-            print(f"❌ Error connecting via proxy (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+            print(f"❌ Error connecting (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
             if attempt < MAX_RETRIES - 1:
                 time.sleep(RETRY_DELAY)
             else:
                 print("❌ All connection attempts failed!")
                 return None
 
-# Connect via proxy
-print("🔍 Connecting to Google Cloud SQL via proxy...")
-pool = connect_via_proxy()
+# Connect using Cloud SQL Connector
+print("🔍 Connecting to Google Cloud SQL...")
+pool = connect_with_connector()
 
 if pool is None:
     print("❌ Initial connection failed! Will retry on first query.")
@@ -61,7 +69,7 @@ def exec_insert_query(query, params):
         # Reconnect if pool is None
         if pool is None:
             print("⚠️ Pool is None, attempting to reconnect...")
-            pool = connect_via_proxy()
+            pool = connect_with_connector()
             if pool is None:
                 raise Exception("Failed to connect to database after retries")
         
@@ -92,7 +100,7 @@ def exec_select_query(query):
         # Reconnect if pool is None
         if pool is None:
             print("⚠️ Pool is None, attempting to reconnect...")
-            pool = connect_via_proxy()
+            pool = connect_with_connector()
             if pool is None:
                 raise Exception("Failed to connect to database after retries")
         
@@ -111,7 +119,7 @@ def exec_update_query(query):
         # Reconnect if pool is None
         if pool is None:
             print("⚠️ Pool is None, attempting to reconnect...")
-            pool = connect_via_proxy()
+            pool = connect_with_connector()
             if pool is None:
                 raise Exception("Failed to connect to database after retries")
         
