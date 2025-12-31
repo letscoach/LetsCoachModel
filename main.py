@@ -1,6 +1,18 @@
 import os
 import sys
 import traceback
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
+logger.info("🚀 Model service starting up...")
 
 # הוסף את השורה הזו למצב development
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -48,19 +60,25 @@ def get_scheduler():
 def LetscoachModel():
     """Cloud Function that runs the match algorithm"""
     try:
-        send_log_message("Cloud function running now")
+        logger.info("📥 Request received")
         data = request.get_json(silent=True) or {}
         action_type = data.get('type')
+        logger.info(f"🎯 Action type: {action_type}, Data: {data}")
 
         handler = ACTION_MAP.get(action_type)
         if handler:
+            logger.info(f"✅ Handler found for {action_type}, executing...")
             result = handler(data)
+            logger.info(f"✅ Handler completed: {result}")
+            send_log_message(f"✅ {action_type} completed: {result}")
             return jsonify({"message": result}), 200
         else:
+            logger.error(f"❌ Unknown type: {action_type}")
             send_log_message(f"Error : Unknown type: {action_type}")
             return jsonify({"error": f"Unknown type: {action_type}"}), 400
 
     except Exception as e:
+        logger.error(f"❌ Error: {str(e)}", exc_info=True)
         send_log_message(f"Error : {str(e)}")
         return jsonify({"error": str(e)}), 200
 

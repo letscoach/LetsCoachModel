@@ -648,11 +648,13 @@ def insert_player_attributes_competition_effected(players_data, competition_id):
                     token=player['token'],
                     score=player.get('score',0), 
                     rank_position=player.get('rank_position',0),
-                    is_winner=player.get('is_winner','NULL')
+                    is_winner=player.get('is_winner',0)
                 )
-                logger.info(f"  - Inserting competition result: {query[:100]}...")
+                logger.info(f"🔍 SQL INSERT Query: {query}")
+                print(f"🔍 SQL INSERT: {query}")  # Print to stdout
                 res = exec_update_query(query)
-                logger.info(f"  - Result insertion status: {res}")
+                logger.info(f"✅ INSERT Result: {res}")
+                print(f"✅ INSERT Result: {res}")
                 
                 # Insert attribute improvements
                 for attr_id, attr_value in attributes.items():
@@ -693,8 +695,14 @@ def update_competition_status(competition_id, status_id):
     Update competition status
     Status IDs: 14=Scheduled, 15=Completed, etc.
     """
+    import logging
+    logger = logging.getLogger(__name__)
     query = sql_queries.UPDATE_COMPETITION_STATUS.format(competition_id=competition_id, status_id=status_id)
+    logger.info(f"🔍 SQL UPDATE Query: {query}")
+    print(f"🔍 SQL UPDATE: {query}")  # Print to stdout
     res = exec_update_query(query)
+    logger.info(f"✅ UPDATE Result: {res}")
+    print(f"✅ UPDATE Result: {res}")
     return res
 
 #########################END - COMPETITIONS###########################

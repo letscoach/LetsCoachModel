@@ -146,9 +146,11 @@ class Dash100:
                 'score': result.get('score', 0)
             }
 
-            # Add is_winner field for top 3 finishers
+            # Add is_winner field for top 3 finishers (1=winner, 0=not winner)
             if result.get('rank_position', 0) <= 3 and not result.get('dnf', False):
-                player_data['is_winner'] = result.get('rank_position', 0)
+                player_data['is_winner'] = 1
+            else:
+                player_data['is_winner'] = 0
 
             # Calculate satisfaction change based on quintiles for valid results
             if not result.get('dnf', False) and total_valid > 0:
@@ -211,9 +213,19 @@ class Dash100:
         Returns:
             The competition results
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"🏁 Starting Dash100 competition {self.competition_id}")
         self.run_competition()
+        logger.info(f"✅ Competition simulated, calculating attribute changes...")
+        
         attribute_changes = self.calculate_attribute_changes()
-        db.insert_player_attributes_competition_effected(attribute_changes, self.competition_id)
+        logger.info(f"📊 Calculated changes for {len(attribute_changes)} players")
+        
+        logger.info(f"💾 Inserting results to database...")
+        success, errors = db.insert_player_attributes_competition_effected(attribute_changes, self.competition_id)
+        logger.info(f"✅ Database insertion complete: {success} succeeded, {errors} failed")
 
         return self.results
 
