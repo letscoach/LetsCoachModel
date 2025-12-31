@@ -30,26 +30,37 @@ def competition_handler(data):
     competition_id = data.get('competition_id')
     competition_type_id = data.get('competition_type_id')
     
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         if competition_type_id == 1:
             # Dash100 competition
             if Dash100:
+                logger.info(f"Starting Dash100 competition {competition_id}")
                 competition = Dash100(competition_id)
                 results = competition.run_and_update()
+                logger.info(f"Dash100 competition {competition_id} completed")
                 return f"Dash100 competition {competition_id} completed with {len(results)} results"
             else:
+                logger.error("Dash100 handler not loaded")
                 return "Error: Dash100 handler not loaded"
         elif competition_type_id == 2:
             # Dash5k competition
             if Dash5K:
+                logger.info(f"Starting Dash5K competition {competition_id}")
                 competition = Dash5K(competition_id)
                 results = competition.run_and_update()
+                logger.info(f"Dash5K competition {competition_id} completed")
                 return f"Dash5k competition {competition_id} completed with {len(results)} results"
             else:
+                logger.error("Dash5K handler not loaded")
                 return "Error: Dash5k handler not loaded"
         else:
+            logger.error(f"Unknown competition type {competition_type_id}")
             return f"Error: Unknown competition type {competition_type_id}"
     except Exception as e:
+        logger.error(f"Error running competition {competition_id}: {str(e)}", exc_info=True)
         return f"Error running competition {competition_id}: {str(e)}"
 
 

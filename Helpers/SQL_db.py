@@ -1,5 +1,6 @@
 import os
 import json
+import time
 
 import pymysql
 from Helpers.table_def import tables as DB_TABLES
@@ -8,31 +9,38 @@ from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
 pool = None
+MAX_RETRIES = 3
+RETRY_DELAY = 1  # seconds
 
 def connect_via_proxy():
     """Connect to Google Cloud SQL via Cloud SQL Auth Proxy using direct pymysql"""
-    try:
-        connection = pymysql.connect(
-            host='127.0.0.1',
-            port=3306,
-            user='me',
-            password='Ab123456',
-            database='main_game',
-            charset='utf8mb4',
-            cursorclass=pymysql.cursors.DictCursor
-        )
-        print("✅ Connected to Google Cloud SQL via proxy!")
-        return connection
-    except Exception as e:
-        print(f"❌ Error connecting via proxy: {e}")
-        return None
+    for attempt in range(MAX_RETRIES):
+        try:
+            connection = pymysql.connect(
+                host='127.0.0.1',
+                port=3306,
+                user='me',
+                password='Ab123456',
+                database='main_game',
+                charset='utf8mb4',
+                cursorclass=pymysql.cursors.DictCursor
+            )
+            print("✅ Connected to Google Cloud SQL via proxy!")
+            return connection
+        except Exception as e:
+            print(f"❌ Error connecting via proxy (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+            else:
+                print("❌ All connection attempts failed!")
+                return None
 
 # Connect via proxy
 print("🔍 Connecting to Google Cloud SQL via proxy...")
 pool = connect_via_proxy()
 
 if pool is None:
-    print("❌ Connection failed!")
+    print("❌ Initial connection failed! Will retry on first query.")
 
 def build_insert_query(table_name: str) -> str:
     columns = DB_TABLES[table_name]
@@ -48,7 +56,15 @@ def build_insert_query(table_name: str) -> str:
 
 
 def exec_insert_query(query, params):
+    global pool
     try:
+        # Reconnect if pool is None
+        if pool is None:
+            print("⚠️ Pool is None, attempting to reconnect...")
+            pool = connect_via_proxy()
+            if pool is None:
+                raise Exception("Failed to connect to database after retries")
+        
         with pool.cursor() as db_conn:
             if type(query) is list:
                 for ind, quer in enumerate(query):
@@ -65,26 +81,46 @@ def exec_insert_query(query, params):
             raise Exception(f"Duplicate value")
         else:
             raise Exception(f"An unexpected error occurred: {str(e)}")
+    except Exception as e:
+        print(f"❌ Error in exec_insert_query: {e}")
+        raise e
 
 
 def exec_select_query(query):
+    global pool
     try:
+        # Reconnect if pool is None
+        if pool is None:
+            print("⚠️ Pool is None, attempting to reconnect...")
+            pool = connect_via_proxy()
+            if pool is None:
+                raise Exception("Failed to connect to database after retries")
+        
         with pool.cursor() as db_conn:
             db_conn.execute(query)
             result = db_conn.fetchall()
-
             return result
     except Exception as e:
+        print(f"❌ Error in exec_select_query: {e}")
         raise e
 
 
 def exec_update_query(query):
+    global pool
     try:
+        # Reconnect if pool is None
+        if pool is None:
+            print("⚠️ Pool is None, attempting to reconnect...")
+            pool = connect_via_proxy()
+            if pool is None:
+                raise Exception("Failed to connect to database after retries")
+        
         with pool.cursor() as db_conn:
             result = db_conn.execute(query)
             pool.commit()
             return result
     except Exception as e:
+        print(f"❌ Error in exec_update_query: {e}")
         raise e
 
 def set_attributes_dict():
@@ -112,12 +148,20 @@ def update_player_freshness(token, freshness):
     query = sql_queries.UPDATE_FRESHNESS_VALUE.format(token=token, freshness_value=freshness)
     exec_update_query(query)
 def set_player_freshness(freshness_delta, operator ,token):
-    query = sql_queries.SET_FRESHNESS_VALUE.format(token=token, freshness_value=freshness_delta, operator = operator)
-    exec_update_query(query)
+    try:
+        query = sql_queries.SET_FRESHNESS_VALUE.format(token=token, freshness_value=freshness_delta, operator = operator)
+        exec_update_query(query)
+    except Exception as e:
+        print(f"❌ Error setting player freshness for {token}: {e}")
+        raise
 
 def set_player_satisfaction(sat_delta, operator ,token):
-    query = sql_queries.SET_SATISFACTION_VALUE.format(token=token, satisfaction_value= sat_delta, operator = operator)
-    exec_update_query(query)
+    try:
+        query = sql_queries.SET_SATISFACTION_VALUE.format(token=token, satisfaction_value= sat_delta, operator = operator)
+        exec_update_query(query)
+    except Exception as e:
+        print(f"❌ Error setting player satisfaction for {token}: {e}")
+        raise
 
 def select_player_freshness(token):
     query = sql_queries.SELECT_FRESHNESS_VALUE.format(token=token)
@@ -564,27 +608,65 @@ def select_players_for_competition(competition_id):
 
 
 def insert_player_attributes_competition_effected(players_data, competition_id):
-    for key, player in players_data.items():
-        query = sql_queries.INSERT_COMPETITION_RESULTS
-        frsheness_attr = player['attributes'].get('Freshness')
-        if frsheness_attr:
-            del player['attributes']['Freshness']
-            set_player_freshness(frsheness_attr,'+',player['token'])
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    success_count = 0
+    error_count = 0
+    
+    try:
+        for key, player in players_data.items():
+            try:
+                logger.info(f"Processing player {player['token']} for competition {competition_id}")
+                
+                # Handle Freshness
+                frsheness_attr = player['attributes'].get('Freshness')
+                if frsheness_attr:
+                    del player['attributes']['Freshness']
+                    logger.info(f"  - Updating Freshness: {frsheness_attr}")
+                    set_player_freshness(frsheness_attr,'+',player['token'])
 
-        satisfaction_attr = player['attributes'].get('Satisfaction')
-        if satisfaction_attr:
-            del player['attributes']['Satisfaction']
-            set_player_satisfaction(satisfaction_attr,'+',player['token'])
+                # Handle Satisfaction
+                satisfaction_attr = player['attributes'].get('Satisfaction')
+                if satisfaction_attr:
+                    del player['attributes']['Satisfaction']
+                    logger.info(f"  - Updating Satisfaction: {satisfaction_attr}")
+                    set_player_satisfaction(satisfaction_attr,'+',player['token'])
 
-        attributes = {f"{ATTR.get(k, k)}": v for k, v in player['attributes'].items()}
-        query = query.format(competition_id=competition_id, token=player['token'],
-                             score=player.get('score',0), rank_position=player.get('rank_position',0),is_winner=player.get('is_winner','NULL'))
-        res = exec_update_query(query)
-        for attr_id, attr_value in attributes.items():
-            # TODO: Nissim! i need procedure that got the attributes json and update the player attributes table
-            sub_query = sql_queries._TEMPLATE_INSERT_IMPROVMENT_MATCH
-            sub_query = sub_query.format(player_id=player['token'], attr_delta=attr_value, attr_id=attr_id)
-            res1 = exec_update_query(sub_query)
+                # Insert competition results
+                attributes = {f"{ATTR.get(k, k)}": v for k, v in player['attributes'].items()}
+                query = sql_queries.INSERT_COMPETITION_RESULTS.format(
+                    competition_id=competition_id, 
+                    token=player['token'],
+                    score=player.get('score',0), 
+                    rank_position=player.get('rank_position',0),
+                    is_winner=player.get('is_winner','NULL')
+                )
+                logger.info(f"  - Inserting competition result: {query[:100]}...")
+                res = exec_update_query(query)
+                logger.info(f"  - Result insertion status: {res}")
+                
+                # Insert attribute improvements
+                for attr_id, attr_value in attributes.items():
+                    sub_query = sql_queries._TEMPLATE_INSERT_IMPROVMENT_MATCH
+                    sub_query = sub_query.format(player_id=player['token'], attr_delta=attr_value, attr_id=attr_id)
+                    res1 = exec_update_query(sub_query)
+                    logger.info(f"  - Attribute {attr_id} update status: {res1}")
+                
+                success_count += 1
+                logger.info(f"✅ Player {player['token']} processed successfully")
+            
+            except Exception as e:
+                error_count += 1
+                logger.error(f"❌ Error processing player {player.get('token', 'unknown')}: {str(e)}", exc_info=True)
+                continue
+        
+        logger.info(f"📊 Competition {competition_id} results summary: {success_count} succeeded, {error_count} failed")
+        return success_count, error_count
+    
+    except Exception as e:
+        logger.error(f"❌ Critical error in insert_player_attributes_competition_effected: {str(e)}", exc_info=True)
+        raise e
 
 
 def get_current_competitions():
