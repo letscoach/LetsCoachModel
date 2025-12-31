@@ -6,14 +6,14 @@ except Exception as e:
     print(traceback.format_exc())
 
 try:
-    from Competitions.dash100 import run_dash100
-    from Competitions.dash5k import run_dash5k
+    from Competitions.dash100 import Dash100
+    from Competitions.dash5k import Dash5K
 except Exception as e:
     import traceback
     print(f"ERROR importing competitions: {e}")
     print(traceback.format_exc())
-    run_dash100 = None
-    run_dash5k = None
+    Dash100 = None
+    Dash5K = None
 
 
 def match_handler(data):
@@ -29,22 +29,28 @@ def competition_handler(data):
     """Handle competition simulation requests"""
     competition_id = data.get('competition_id')
     competition_type_id = data.get('competition_type_id')
-    group_id = data.get('group_id')
     
-    if competition_type_id == 1:
-        # Dash100 competition
-        if run_dash100:
-            return run_dash100(competition_id, group_id)
+    try:
+        if competition_type_id == 1:
+            # Dash100 competition
+            if Dash100:
+                competition = Dash100(competition_id)
+                results = competition.run_and_update()
+                return f"Dash100 competition {competition_id} completed with {len(results)} results"
+            else:
+                return "Error: Dash100 handler not loaded"
+        elif competition_type_id == 2:
+            # Dash5k competition
+            if Dash5K:
+                competition = Dash5K(competition_id)
+                results = competition.run_and_update()
+                return f"Dash5k competition {competition_id} completed with {len(results)} results"
+            else:
+                return "Error: Dash5k handler not loaded"
         else:
-            return "Error: Dash100 handler not loaded"
-    elif competition_type_id == 2:
-        # Dash5k competition
-        if run_dash5k:
-            return run_dash5k(competition_id, group_id)
-        else:
-            return "Error: Dash5k handler not loaded"
-    else:
-        return f"Error: Unknown competition type {competition_type_id}"
+            return f"Error: Unknown competition type {competition_type_id}"
+    except Exception as e:
+        return f"Error running competition {competition_id}: {str(e)}"
 
 
 ACTION_MAP = {
