@@ -8,12 +8,14 @@ except Exception as e:
 try:
     from Competitions.dash100 import Dash100
     from Competitions.dash5k import Run5k
+    from Competitions.penalty_shootout import PenaltyShootout
 except Exception as e:
     import traceback
     print(f"ERROR importing competitions: {e}")
     print(traceback.format_exc())
     Dash100 = None
-    Dash5K = None
+    Run5k = None
+    PenaltyShootout = None
 
 
 def match_handler(data):
@@ -63,6 +65,28 @@ def competition_handler(data):
             else:
                 logger.error("Dash5K handler not loaded")
                 return "Error: Dash5k handler not loaded"
+        elif competition_type_id == 3:
+            # Penalty Shooter competition
+            if PenaltyShootout:
+                logger.info(f"Starting Penalty Shooter competition {competition_id}")
+                competition = PenaltyShootout(competition_id)
+                results = competition.run_and_update()
+                logger.info(f"Penalty Shooter competition {competition_id} completed")
+                return f"Penalty Shooter competition {competition_id} completed"
+            else:
+                logger.error("PenaltyShootout handler not loaded")
+                return "Error: PenaltyShootout handler not loaded"
+        elif competition_type_id == 4:
+            # Goalkeeper competition (same as Penalty Shooter but from GK perspective)
+            if PenaltyShootout:
+                logger.info(f"Starting Goalkeeper competition {competition_id}")
+                competition = PenaltyShootout(competition_id)
+                results = competition.run_and_update()
+                logger.info(f"Goalkeeper competition {competition_id} completed")
+                return f"Goalkeeper competition {competition_id} completed"
+            else:
+                logger.error("PenaltyShootout handler not loaded")
+                return "Error: PenaltyShootout handler not loaded"
         else:
             logger.error(f"Unknown competition type {competition_type_id}")
             return f"Error: Unknown competition type {competition_type_id}"
