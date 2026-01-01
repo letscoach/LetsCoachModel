@@ -34,6 +34,13 @@ def competition_handler(data):
     logger = logging.getLogger(__name__)
     
     try:
+        # Check if competition was already processed (race condition prevention)
+        from Helpers.competition_lock import check_competition_already_running
+        if check_competition_already_running(competition_id):
+            msg = f"⚠️ Competition {competition_id} already running or just completed - skipping to prevent duplicate execution"
+            logger.warning(msg)
+            return msg
+        
         if competition_type_id == 1:
             # Dash100 competition
             if Dash100:
