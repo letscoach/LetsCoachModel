@@ -358,10 +358,8 @@ class PenaltyShootout:
                 player_data['attributes']['Satisfaction'] = -10
             
             # No freshness impact (as per PRD)
-            # But small attribute improvements for top performers
-            if result['rank_position'] <= 3:
-                player_data['attributes']['Shoot_Precision'] = 0.02
-                player_data['attributes']['Finishing'] = 0.01
+            # No attribute improvements for penalty competitions (per PRD)
+            # Only satisfaction changes
             
             formatted_changes[player_token] = player_data
         
