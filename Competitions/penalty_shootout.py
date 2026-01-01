@@ -405,7 +405,16 @@ class PenaltyShootout:
         # Get competition type from database to determine if Penalty Shooter (3) or Goalkeeper (4)
         comp_query = f"SELECT competition_type_id FROM competitions WHERE id = {self.competition_id}"
         comp_result = db.exec_select_query(comp_query)
-        competition_type_id = comp_result[0][0] if comp_result else 3  # Default to 3 if not found
+        
+        # Handle DictCursor result (list of dicts) or tuple result
+        if comp_result:
+            row = comp_result[0]
+            if isinstance(row, dict):
+                competition_type_id = row.get('competition_type_id', 3)
+            else:
+                competition_type_id = row[0]
+        else:
+            competition_type_id = 3
         
         # Distribute prizes to winners
         print(f"\n" + "="*70)
