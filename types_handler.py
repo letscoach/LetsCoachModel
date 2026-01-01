@@ -5,10 +5,38 @@ except Exception as e:
     print(f"ERROR during imports: {e}")
     print(traceback.format_exc())
 
+# Import with reload to ensure latest code is used
+import importlib
+import sys
+
 try:
-    from Competitions.dash100 import Dash100
-    from Competitions.dash5k import Run5k
-    from Competitions.penalty_shootout import PenaltyShootout
+    # Reload SQL_db first (contains prize distribution function)
+    from Helpers import SQL_db
+    if 'Helpers.SQL_db' in sys.modules:
+        importlib.reload(SQL_db)
+        print("🔄 Reloaded Helpers.SQL_db")
+    
+    # Import modules
+    from Competitions import dash100, dash5k, penalty_shootout
+    
+    # Reload modules to get latest code (important for long-running Flask server)
+    if 'Competitions.dash100' in sys.modules:
+        importlib.reload(dash100)
+        print("🔄 Reloaded Competitions.dash100")
+    if 'Competitions.dash5k' in sys.modules:
+        importlib.reload(dash5k)
+        print("🔄 Reloaded Competitions.dash5k")
+    if 'Competitions.penalty_shootout' in sys.modules:
+        importlib.reload(penalty_shootout)
+        print("🔄 Reloaded Competitions.penalty_shootout")
+    
+    # Get classes
+    Dash100 = dash100.Dash100
+    Run5k = dash5k.Run5k
+    PenaltyShootout = penalty_shootout.PenaltyShootout
+    
+    print("✅ All competition modules loaded and reloaded")
+    
 except Exception as e:
     import traceback
     print(f"ERROR importing competitions: {e}")

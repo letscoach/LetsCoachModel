@@ -396,9 +396,34 @@ class PenaltyShootout:
         Returns:
             The competition results and goalkeeper info
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"🏁 Starting PenaltyShootout competition {self.competition_id}")
         results = self.run_competition()
         attribute_changes = self.calculate_attribute_changes()
         db.insert_player_attributes_competition_effected(attribute_changes, self.competition_id)
+        
+        # Get competition type from database to determine if Penalty Shooter (3) or Goalkeeper (4)
+        comp_query = f"SELECT competition_type_id FROM competitions WHERE id = {self.competition_id}"
+        comp_result = db.exec_select_query(comp_query)
+        competition_type_id = comp_result[0][0] if comp_result else 3  # Default to 3 if not found
+        
+        # Distribute prizes to winners
+        print(f"\n" + "="*70)
+        print(f"💰 PENALTY: About to distribute prizes for competition {self.competition_id}, type {competition_type_id}")
+        print(f"="*70)
+        logger.info(f"💰 Distributing prizes for type {competition_type_id}...")
+        try:
+            prize_result = db.distribute_competition_prizes(self.competition_id, competition_type_id)
+            print(f"🎉 PENALTY: Prize distribution result: {prize_result}")
+            logger.info(f"🎉 Prize distribution result: {prize_result.get('status')}")
+        except Exception as e:
+            print(f"❌ PENALTY: Prize distribution FAILED: {e}")
+            logger.error(f"❌ Prize distribution failed: {e}", exc_info=True)
+            import traceback
+            traceback.print_exc()
+        print(f"="*70 + "\n")
         
         return {
             'results': results,

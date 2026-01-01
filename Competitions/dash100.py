@@ -226,6 +226,22 @@ class Dash100:
         logger.info(f"💾 Inserting results to database...")
         success, errors = db.insert_player_attributes_competition_effected(attribute_changes, self.competition_id)
         logger.info(f"✅ Database insertion complete: {success} succeeded, {errors} failed")
+        
+        # Distribute prizes to winners
+        print(f"\n" + "="*70)
+        print(f"💰 DASH100: About to distribute prizes for competition {self.competition_id}")
+        print(f"="*70)
+        logger.info(f"💰 Distributing prizes...")
+        try:
+            prize_result = db.distribute_competition_prizes(self.competition_id, competition_type_id=1)
+            print(f"🎉 DASH100: Prize distribution result: {prize_result}")
+            logger.info(f"🎉 Prize distribution result: {prize_result.get('status')}")
+        except Exception as e:
+            print(f"❌ DASH100: Prize distribution FAILED: {e}")
+            logger.error(f"❌ Prize distribution failed: {e}", exc_info=True)
+            import traceback
+            traceback.print_exc()
+        print(f"="*70 + "\n")
 
         return self.results
 

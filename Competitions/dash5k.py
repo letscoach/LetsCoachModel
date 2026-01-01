@@ -211,9 +211,29 @@ class Run5k:
         Returns:
             The competition results
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"🏁 Starting Run5k competition {self.competition_id}")
         self.run_competition()
         attribute_changes = self.calculate_attribute_changes()
         db.insert_player_attributes_competition_effected(attribute_changes, self.competition_id)
+        
+        # Distribute prizes to winners
+        print(f"\n" + "="*70)
+        print(f"💰 RUN5K: About to distribute prizes for competition {self.competition_id}")
+        print(f"="*70)
+        logger.info(f"💰 Distributing prizes...")
+        try:
+            prize_result = db.distribute_competition_prizes(self.competition_id, competition_type_id=2)
+            print(f"🎉 RUN5K: Prize distribution result: {prize_result}")
+            logger.info(f"🎉 Prize distribution result: {prize_result.get('status')}")
+        except Exception as e:
+            print(f"❌ RUN5K: Prize distribution FAILED: {e}")
+            logger.error(f"❌ Prize distribution failed: {e}", exc_info=True)
+            import traceback
+            traceback.print_exc()
+        print(f"="*70 + "\n")
 
         return self.results
 

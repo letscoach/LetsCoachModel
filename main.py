@@ -65,6 +65,13 @@ def LetscoachModel():
         action_type = data.get('type')
         logger.info(f"🎯 Action type: {action_type}, Data: {data}")
 
+        # Reload types_handler to get latest code (important for development)
+        import importlib
+        import types_handler
+        importlib.reload(types_handler)
+        from types_handler import ACTION_MAP
+        logger.info("🔄 Reloaded types_handler to get latest code")
+
         handler = ACTION_MAP.get(action_type)
         if handler:
             logger.info(f"✅ Handler found for {action_type}, executing...")

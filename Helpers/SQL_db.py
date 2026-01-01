@@ -795,3 +795,199 @@ def get_all_match_kinds():
 
 def init_mock_db():
     return None
+
+
+def distribute_competition_prizes(competition_id, competition_type_id):
+    """
+    Distribute prizes to competition winners based on their rank.
+    
+    Args:
+        competition_id: The ID of the competition
+        competition_type_id: The type of competition (1=100M, 2=5000M, 3=Penalty, 4=Goalkeeper)
+    
+    Returns:
+        dict: Summary of prize distribution
+    """
+    print(f"\n{'='*80}")
+    print(f"💰💰💰 FUNCTION CALLED: distribute_competition_prizes")
+    print(f"    Competition ID: {competition_id}")
+    print(f"    Competition Type: {competition_type_id}")
+    print(f"{'='*80}\n")
+    
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"💰 Starting prize distribution for competition {competition_id} (type {competition_type_id})")
+    
+    try:
+        # Step 1: Check if prizes already distributed (prevent duplicates)
+        check_query = f"""
+        SELECT COUNT(*) as count 
+        FROM transactions 
+        WHERE description LIKE '%Competition%{competition_id}%'
+        AND transaction_type = 'Prize'
+        """
+        existing = exec_select_query(check_query)
+        if existing and len(existing) > 0:
+            count_value = existing[0]['count'] if isinstance(existing[0], dict) else existing[0][0]
+            if count_value > 0:
+                logger.warning(f"⚠️ Prizes already distributed for competition {competition_id}, skipping")
+                return {'status': 'already_distributed', 'competition_id': competition_id}
+        
+        # Step 2: Get prize information for this competition type
+        prize_query = f"""
+        SELECT 
+            place,
+            amount,
+            token_coin_id
+        FROM competition_type_prizes
+        WHERE competition_type_id = {competition_type_id}
+        ORDER BY place
+        """
+        prizes = exec_select_query(prize_query)
+        
+        if not prizes:
+            logger.error(f"❌ No prizes defined for competition type {competition_type_id}")
+            return {'status': 'no_prizes_defined', 'competition_id': competition_id}
+        
+        # Convert to dict for easy lookup
+        prizes_dict = {}
+        for row in prizes:
+            if isinstance(row, dict):
+                prizes_dict[row['place']] = {'amount': row['amount'], 'token_coin_id': row['token_coin_id']}
+            else:
+                prizes_dict[row[0]] = {'amount': row[1], 'token_coin_id': row[2]}
+        logger.info(f"📋 Found {len(prizes_dict)} prize tiers")
+        
+        # Step 3: Get winners from competition_results
+        winners_query = f"""
+        SELECT 
+            cr.rank_position,
+            cr.token,
+            p.user_id,
+            p.name as player_name
+        FROM competition_results cr
+        LEFT JOIN players p ON cr.token = p.token
+        WHERE cr.competition_id = {competition_id}
+        AND cr.rank_position <= 3
+        ORDER BY cr.rank_position
+        """
+        winners = exec_select_query(winners_query)
+        
+        if not winners:
+            logger.warning(f"⚠️ No winners found for competition {competition_id}")
+            return {'status': 'no_winners', 'competition_id': competition_id}
+        
+        logger.info(f"🏆 Found {len(winners)} winners")
+        
+        # Step 4: Get competition type name for description
+        competition_names = {
+            1: "100M Sprint",
+            2: "5000M Run",
+            3: "Penalty Shooter",
+            4: "Goalkeeper"
+        }
+        comp_name = competition_names.get(competition_type_id, f"Competition Type {competition_type_id}")
+        
+        # Step 5: Create transactions for each winner
+        transactions_created = 0
+        for winner in winners:
+            if isinstance(winner, dict):
+                rank_position = winner['rank_position']
+                token = winner['token']
+                user_id = winner['user_id']
+                player_name = winner.get('player_name')
+            else:
+                rank_position, token, user_id, player_name = winner
+            
+            if not user_id:
+                logger.warning(f"⚠️ No user_id found for token {token}, skipping")
+                continue
+            
+            # Get prize for this rank
+            if rank_position not in prizes_dict:
+                logger.warning(f"⚠️ No prize defined for rank {rank_position}, skipping")
+                continue
+            
+            prize_info = prizes_dict[rank_position]
+            amount = prize_info['amount']
+            token_coin_id = prize_info['token_coin_id']
+            
+            # Create description
+            description = f"Place {rank_position} - Competition {comp_name} (ID: {competition_id})"
+            
+            # Insert transaction
+            transaction_query = f"""
+            INSERT INTO transactions (
+                user_id,
+                token_coin_id,
+                amount,
+                timestamp,
+                description,
+                transaction_type
+            ) VALUES (
+                '{user_id}',
+                {token_coin_id},
+                {amount},
+                NOW(),
+                '{description}',
+                'Prize'
+            )
+            """
+            
+            # הדפס את ה-INSERT לפני ביצוע
+            print(f"\n{'🔵'*40}")
+            print(f"💾 EXECUTING INSERT QUERY:")
+            print(f"   User: {user_id}")
+            print(f"   Amount: {amount}")
+            print(f"   Token Coin ID: {token_coin_id}")
+            print(f"   Description: {description}")
+            print(f"\nFull Query:\n{transaction_query}")
+            print(f"{'🔵'*40}\n")
+            
+            try:
+                exec_update_query(transaction_query)
+                transactions_created += 1
+                print(f"✅ INSERT SUCCESS - Transaction created for rank {rank_position}")
+                logger.info(f"✅ Prize distributed: {amount} tokens to {player_name or user_id[:10]+'...'} (Rank {rank_position})")
+            except Exception as e:
+                logger.error(f"❌ Failed to create transaction for rank {rank_position}: {e}")
+        
+        logger.info(f"🎉 Prize distribution complete: {transactions_created}/{len(winners)} transactions created")
+        
+        result = {
+            'status': 'success',
+            'competition_id': competition_id,
+            'transactions_created': transactions_created,
+            'winners_count': len(winners)
+        }
+        
+        print(f"\n{'='*80}")
+        print(f"✅✅✅ PRIZE DISTRIBUTION COMPLETED SUCCESSFULLY")
+        print(f"    Competition: {competition_id}")
+        print(f"    Transactions: {transactions_created}/{len(winners)}")
+        print(f"    Result: {result}")
+        print(f"{'='*80}\n")
+        
+        return result
+        
+    except Exception as e:
+        error_msg = f"❌ Error distributing prizes for competition {competition_id}: {e}"
+        print(f"\n{'='*80}")
+        print(f"❌❌❌ PRIZE DISTRIBUTION FAILED")
+        print(f"    Competition: {competition_id}")
+        print(f"    Error: {e}")
+        print(f"{'='*80}\n")
+        logger.error(error_msg)
+        import traceback
+        traceback.print_exc()
+        return {
+            'status': 'error',
+            'competition_id': competition_id,
+            'error': str(e)
+        }
+        return {
+            'status': 'error',
+            'competition_id': competition_id,
+            'error': str(e)
+        }
