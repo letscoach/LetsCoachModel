@@ -45,9 +45,39 @@ class PenaltyShootout:
         """
         self.competition_id = competition_id
         self.participants = db.select_players_for_competition(competition_id)
+        
+        # ✅ Update freshness for all participants before competition starts
+        self._update_participants_freshness()
+        
         self.goalkeeper = self._select_goalkeeper()
         self.results = []
         self.rounds_data = []  # Store data for each round
+
+    def _update_participants_freshness(self):
+        """
+        Update freshness for all participants before the competition starts.
+        Ensures players have accurate freshness values based on time elapsed since last effort.
+        """
+        import logging
+        from Game import freshness_update as fu
+        
+        logger = logging.getLogger(__name__)
+        logger.info(f"🔄 Updating freshness for {len(self.participants)} participants before competition")
+        
+        try:
+            # Get list of player tokens
+            player_tokens = [p['token'] for p in self.participants]
+            
+            # Update freshness for all participants
+            fu.update_freshness_for_players(player_tokens)
+            
+            # Reload participant data with updated freshness
+            self.participants = db.select_players_for_competition(self.competition_id)
+            
+            logger.info(f"✅ Freshness updated successfully for all participants")
+        except Exception as e:
+            logger.error(f"⚠️ Error updating freshness before competition: {e}")
+            # Continue anyway - don't block competition
 
     def _select_goalkeeper(self) -> Dict:
         """

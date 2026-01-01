@@ -38,7 +38,8 @@ def calculate_freshness_update(last_update, endurance):
     if last_update is None or endurance is None:
         return 0  # No update if data is missing
 
-    now = datetime.utcnow()
+    # ✅ FIX: Use local time instead of UTC to match DB NOW()
+    now = datetime.now()  # Changed from datetime.utcnow()
     time_diff = now - last_update
     hours_passed = time_diff.total_seconds() / 3600  # Convert time difference to hours
 

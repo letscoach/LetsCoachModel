@@ -103,7 +103,8 @@ SET attribute_value =
     CASE
         WHEN attribute_value {operator} {freshness_value} < 0 THEN 0
         ELSE attribute_value {operator} {freshness_value}
-    END
+    END,
+    last_update = NOW()
 WHERE attribute_id = 15 AND token = '{token}'
 '''
 
