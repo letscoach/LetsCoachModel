@@ -135,14 +135,14 @@ class Run5k:
         for i, result in enumerate(results):
             result['rank_position'] = i + 1  # Changed to 'rank_position' to match required format
 
-            # Calculate score based on race time (inverted and normalized to 0-100)
+            # Store actual race time as score (raw achievement)
             if result.get('dnf', False):
-                result['score'] = 0
+                result['score'] = 'DNF'
             else:
-                # Normalize: best time (MIN_TIME) = 100, worst time (MAX_TIME) = 0
-                normalized_time = max(0,
-                                      min(1, (self.MAX_TIME - result['race_time']) / (self.MAX_TIME - self.MIN_TIME)))
-                result['score'] = round(normalized_time * 100)
+                # Display race time in minutes:seconds format (e.g., "14:32")
+                minutes = int(result['race_time'] // 60)
+                seconds = int(result['race_time'] % 60)
+                result['score'] = f"{minutes}:{seconds:02d}"
 
         # Store results for later use
         self.results = results
@@ -173,7 +173,7 @@ class Run5k:
                 'token': player_token,
                 'attributes': {},
                 'rank_position': result.get('rank_position', 0),
-                'score': result.get('score', 0)
+                'score': result.get('score', 'N/A')
             }
 
             # Add is_winner field for top 3 finishers

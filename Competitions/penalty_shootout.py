@@ -191,8 +191,19 @@ class PenaltyShootout:
                 if self._simulate_single_kick(kicker, self.goalkeeper):
                     goals_scored += 1
             
+            # Track cumulative stats for this player
+            token = kicker['token']
+            if not hasattr(self, 'player_stats'):
+                self.player_stats = {}
+            
+            if token not in self.player_stats:
+                self.player_stats[token] = {'total_goals': 0, 'total_shots': 0}
+            
+            self.player_stats[token]['total_goals'] += goals_scored
+            self.player_stats[token]['total_shots'] += self.SHOTS_PER_ROUND
+            
             round_results.append({
-                'token': kicker['token'],
+                'token': token,
                 'goals_scored': goals_scored,
                 'player_data': kicker
             })
@@ -242,6 +253,9 @@ class PenaltyShootout:
         print(f"\n🥅 Starting Penalty Shootout Competition!")
         print(f"   Goalkeeper: {self.goalkeeper.get('name', 'Unknown')}")
         print(f"   Participants: {len(self.participants)} kickers")
+        
+        # Initialize player stats tracking
+        self.player_stats = {}
         
         current_kickers = self.participants.copy()
         round_number = 1
@@ -327,13 +341,19 @@ class PenaltyShootout:
         # Build results
         results = []
         for i, data in enumerate(sorted_data):
+            token = data['token']
+            # Get cumulative stats for this player
+            stats = getattr(self, 'player_stats', {}).get(token, {'total_goals': 0, 'total_shots': 0})
+            
             results.append({
-                'token': data['token'],
+                'token': token,
                 'rank_position': i + 1,
                 'elimination_round': data['elimination_round'],
                 'goals_in_final_round': data['goals_in_final_round'],
                 'is_winner': data.get('is_winner', False),
-                'score': max(0, 100 - (i * 2))  # Score decreases by rank
+                'total_goals': stats['total_goals'],
+                'total_shots': stats['total_shots'],
+                'score': f"{stats['total_goals']}/{stats['total_shots']}"  # Raw achievement (e.g., "12/15")
             })
         
         # Add goalkeeper saves info (not part of results but useful)
@@ -354,6 +374,19 @@ class PenaltyShootout:
         formatted_changes = {}
         total_participants = len(self.results)
         
+        # Add goalkeeper as a separate entry
+        if self.goalkeeper:
+            gk_token = self.goalkeeper['token']
+            gk_saves = getattr(self, 'gk_saves', 0)
+            
+            formatted_changes[gk_token] = {
+                'token': gk_token,
+                'attributes': {},  # No attribute changes for goalkeeper
+                'rank_position': 0,  # 0 = goalkeeper (not competing)
+                'score': f"{gk_saves} saves",  # Raw achievement for goalkeeper
+                'is_winner': 2  # 2 = goalkeeper marker
+            }
+        
         for result in self.results:
             player_token = result['token']
             player = db.get_player_by_token(player_token)
@@ -366,7 +399,7 @@ class PenaltyShootout:
                 'token': player_token,
                 'attributes': {},
                 'rank_position': result['rank_position'],
-                'score': result['score']
+                'score': result.get('score', '0/0')
             }
             
             # Add is_winner for top 3

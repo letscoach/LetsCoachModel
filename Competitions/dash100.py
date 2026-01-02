@@ -135,14 +135,12 @@ class Dash100:
         for i, result in enumerate(results):
             result['rank_position'] = i + 1  # Changed from rank to rank_position
 
-            # Calculate score based on race time (inverted and normalized to 0-100)
+            # Store actual race time as score (raw achievement)
             if result.get('dnf', False):
-                result['score'] = 0
+                result['score'] = 'DNF'
             else:
-                # For 100m dash, lower time is better - normalize to 0-100 scale
-                time_range = self.MAX_TIME - self.MIN_TIME
-                normalized_time = max(0, min(1, (self.MAX_TIME - result['race_time']) / time_range))
-                result['score'] = round(normalized_time * 100)
+                # Display race time in seconds (e.g., "10.52s")
+                result['score'] = f"{result['race_time']:.2f}s"
 
         # Store results for later use
         self.results = results
@@ -173,7 +171,7 @@ class Dash100:
                 'token': player_token,
                 'attributes': {},
                 'rank_position': result.get('rank_position', 0),
-                'score': result.get('score', 0)
+                'score': result.get('score', 'N/A')
             }
 
             # Add is_winner field for top 3 finishers (1=winner, 0=not winner)
