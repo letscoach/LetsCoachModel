@@ -304,13 +304,24 @@ class PenaltyShootout:
                 print("⚠️ Too many rounds, declaring all remaining as winners")
                 break
         
-        # Winner(s)
+        # Winner(s) - find their actual score from the last round
         if current_kickers:
+            # Get the last round results to find winner's actual score
+            last_round = self.rounds_data[-1] if self.rounds_data else None
+            
             for winner in current_kickers:
+                # Find winner's actual goals in last round
+                winner_goals = self.SHOTS_PER_ROUND  # Default
+                if last_round:
+                    for result in last_round['results']:
+                        if result['token'] == winner['token']:
+                            winner_goals = result['goals_scored']
+                            break
+                
                 all_eliminated.append({
                     'token': winner['token'],
                     'elimination_round': round_number,  # Winner's round
-                    'goals_in_final_round': self.SHOTS_PER_ROUND,  # Assume perfect round
+                    'goals_in_final_round': winner_goals,  # Actual goals scored
                     'is_winner': True
                 })
         
