@@ -1025,7 +1025,7 @@ INSERT INTO competition_results (
     is_winner
     )
 VALUES
-    ({competition_id}, '{token}', {score}, {rank_position}, {is_winner});
+    ({competition_id}, '{token}', '{score}', {rank_position}, {is_winner});
 '''
 
 SELECT_COMPETITIONS_FOR_CURRENT_TIME = '''
