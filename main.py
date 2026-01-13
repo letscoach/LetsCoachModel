@@ -1,5 +1,6 @@
 import os
 import sys
+# DEBUG: Force rebuild for git update
 import traceback
 import logging
 
