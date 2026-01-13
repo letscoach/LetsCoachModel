@@ -1050,4 +1050,10 @@ SET status_id = {status_id}
 WHERE id = {competition_id};
 '''
 
+UPDATE_MATCH_RESULT_CANCELLED = '''
+UPDATE matches
+SET result = 'CANCELLED'
+WHERE match_id = {match_id};
+'''
+
 ################################## END COMPETITION ##############################

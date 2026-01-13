@@ -155,6 +155,12 @@ def get_current_matches():
     telegram.send_log_message('Start to scan daily games..')
     matches_lst = sql_db.get_current_matches()
     for match in matches_lst:
+        # Check if friendly match has no opponent
+        if match.get("away_team_id") is None:
+            telegram.send_log_message(f'Cancelling friendly match {match.get("match_id")} - No opponent found.')
+            sql_db.cancel_match(match.get("match_id"))
+            continue
+
         telegram.send_log_message(f'Here we go, new game : {match.get("match_id","Not Avilable")} starting now!!')
         game_launcher(match)
         try:

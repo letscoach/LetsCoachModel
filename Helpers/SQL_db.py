@@ -586,6 +586,9 @@ def get_training_details(training_id):
     data = exec_select_query(query)
     return data
 
+def cancel_match(match_id):
+    query = sql_queries.UPDATE_MATCH_RESULT_CANCELLED.format(match_id=match_id)
+    exec_update_query(query)
 
 #TODO: Tiko - here your freshness calculator
 def get_freshness_last_effort(token):
