@@ -52,8 +52,8 @@ if pool is None:
 
 def build_insert_query(table_name: str) -> str:
     columns = DB_TABLES[table_name]
-    # Create placeholders for values, e.g., "%s, %s, %s" for parameterized queries
-    placeholders = ', '.join([':' + x for x in columns])
+    # Create placeholders for values, e.g., "%(col)s" for parameterized queries with dict
+    placeholders = ', '.join([f'%({x})s' for x in columns])
 
     # Format the column names, e.g., "col1, col2, col3"
     columns_str = ', '.join(columns)
