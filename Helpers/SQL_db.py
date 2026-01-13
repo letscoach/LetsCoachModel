@@ -421,11 +421,14 @@ def get_league_by_id(league_id):
 
 
 def insert_init_matches(matches):
-    for match in matches:
+    print(f"🎯 MODEL insert_init_matches - Received {len(matches)} matches")
+    for idx, match in enumerate(matches):
         # Ensure 'kind' exists before inserting
         if 'kind' not in match or match['kind'] is None:
             print(f"⚠️ Warning: Match missing 'kind' field! Setting to 1 (League) by default")
             match['kind'] = 1  # Default to League match
+        
+        print(f"🔍 MODEL Match #{idx+1} - kind={match.get('kind')}, league_id={match.get('league_id')}, home={match.get('home_team_id')}, away={match.get('away_team_id')}")
             
         query = build_insert_query("matches")
         
