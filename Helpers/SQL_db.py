@@ -428,6 +428,10 @@ def insert_init_matches(matches):
             match['kind'] = 1  # Default to League match
             
         query = build_insert_query("matches")
+        
+        # LOGGING: Check what we are sending
+        print(f"DEBUG insert_init_matches - Match Kind: {match.get('kind')} (Type: {type(match.get('kind'))})")
+        
         res = exec_insert_query(query, match)
         match['match_id'] = res
 
