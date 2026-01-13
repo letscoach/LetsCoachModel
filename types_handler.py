@@ -123,7 +123,36 @@ def competition_handler(data):
         return f"Error running competition {competition_id}: {str(e)}"
 
 
+def schedule_handler(data):
+    """Handle schedule generation request"""
+    try:
+        from Game.Matches import generate_schedule_double_round
+        
+        league_id = data.get('league_id')
+        start_date = data.get('start_date')
+        start_time = data.get('start_time', '15:00')
+        days_between = data.get('days_between', 7)
+        
+        if not league_id or not start_date:
+            return "Error: Missing league_id or start_date"
+            
+        print(f"Generating schedule for league {league_id} starting {start_date}")
+        schedule = generate_schedule_double_round(
+            league_id, 
+            start_date, 
+            start_time_gmt=start_time, 
+            days_between_matchdays=days_between
+        )
+        return f"Schedule generated with {len(schedule)} matches"
+    except Exception as e:
+        import traceback
+        print(f"Error generating schedule: {e}")
+        print(traceback.format_exc())
+        return f"Error: {e}"
+
+
 ACTION_MAP = {
     'match': match_handler,
     'competition': competition_handler,
+    'generate_schedule': schedule_handler,
 }
