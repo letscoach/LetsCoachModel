@@ -73,6 +73,10 @@ def exec_insert_query(query, params):
             if pool is None:
                 raise Exception("Failed to connect to database after retries")
         
+        # LOGGING REQUESTED BY USER
+        print(f"DEBUG exec_insert_query - QUERY: {query}")
+        print(f"DEBUG exec_insert_query - PARAMS: {params}")
+
         with pool.cursor() as db_conn:
             if type(query) is list:
                 for ind, quer in enumerate(query):

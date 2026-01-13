@@ -131,6 +131,9 @@ def generate_schedule_single_round(league_id, start_date):
     for match in schedule:
         match['kind'] = 1
     
+    print(f"DEBUG: Inserting matches with kind: {[m.get('kind') for m in schedule[:3]]} (showing first 3)")
+    telegram.send_log_message(f"DEBUG: Inserting {len(schedule)} matches. First match kind: {schedule[0].get('kind')}")
+
     sql_db.insert_init_matches(schedule)
     # for sc in schedule:
     #     create_task_for_match(sc)
