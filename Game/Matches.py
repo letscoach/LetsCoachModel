@@ -144,6 +144,16 @@ def generate_schedule_single_round(league_id, start_date):
 
 def game_launcher(match):
     telegram.send_log_message("1.launch game now")
+
+    # Check/Validate opponent existence before launching
+    away_team = match.get('away_team_id')
+    if away_team is None or str(away_team).lower() == 'none' or away_team == 0:
+        match_id = match.get('match_id')
+        telegram.send_log_message(f'Cancelling match {match_id} in launcher - No opponent (away_team_id={away_team})')
+        if match_id:
+            sql_db.cancel_match(match_id)
+        return {"error": "Match cancelled due to missing opponent"}
+
     game_processor = game_controller.GameProcessor(match['match_id'], match['kind'])
     output = game_processor.init_game(match['home_team_id'], match['away_team_id'])
     telegram.send_log_message(f'Match id : {match.get("match_id", "Not Available")} Completed!, Score: {output.get("result",{}).get("team1_score")}'
