@@ -754,16 +754,16 @@ def get_match_kind_id(kind_name):
 def get_match_kind_factors(match_kind_id):
     """
     Get the factors for a specific match kind from the database
-    Returns dict with attribute_delta_factor, freshness_delta_factor, satisfaction_delta_factor
+    Returns dict with improvement_factor, fatigue_factor, satisfaction_factor
     """
     try:
         query = f"""
         SELECT 
             id,
             name,
-            attribute_delta_factor,
-            freshness_delta_factor,
-            satisfaction_delta_factor
+            improvement_factor,
+            fatigue_factor,
+            satisfaction_factor
         FROM match_kinds 
         WHERE id = {match_kind_id}
         """
@@ -773,24 +773,28 @@ def get_match_kind_factors(match_kind_id):
             return {
                 'kind_id': row.get('id', match_kind_id),
                 'name': row.get('name', 'Unknown'),
-                'attribute_delta_factor': float(row.get('attribute_delta_factor', 1.0)),
-                'freshness_delta_factor': float(row.get('freshness_delta_factor', 1.0)),
-                'satisfaction_delta_factor': float(row.get('satisfaction_delta_factor', 1.0))
+                'improvement_factor': float(row.get('improvement_factor', 1.0)),
+                'fatigue_factor': float(row.get('fatigue_factor', 1.0)),
+                'satisfaction_factor': float(row.get('satisfaction_factor', 1.0))
             }
         else:
             print(f"⚠️ Warning: Match kind ID {match_kind_id} not found in match_kinds table. Using default factors.")
-            # Return default factors (League)
             return {
                 'kind_id': match_kind_id,
                 'name': 'Unknown',
-                'attribute_delta_factor': 1.0,
-                'freshness_delta_factor': 1.0,
-                'satisfaction_delta_factor': 1.0
+                'improvement_factor': 1.0,
+                'fatigue_factor': 1.0,
+                'satisfaction_factor': 1.0
             }
     except Exception as e:
         print(f"❌ Error getting match kind factors: {e}. Using default factors.")
         return {
             'kind_id': match_kind_id,
+            'name': 'Unknown',
+            'improvement_factor': 1.0,
+            'fatigue_factor': 1.0,
+            'satisfaction_factor': 1.0
+        }
             'name': 'Unknown',
             'attribute_delta_factor': 1.0,
             'freshness_delta_factor': 1.0,

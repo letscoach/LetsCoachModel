@@ -51,7 +51,7 @@ class SatisfactionCalculator:
         """
         if factors is None:
             factors = {
-                'satisfaction_delta_factor': 1.0
+                'satisfaction_factor': 1.0
             }
         satisfaction_changes = {}
         is_draw = team1_score == team2_score
@@ -122,7 +122,7 @@ class SatisfactionCalculator:
             #    satisfaction_change -= 2
 
             # Apply changes to player
-            player_result['performance']["satisfaction_delta"] = int(satisfaction_change * factors['satisfaction_delta_factor'])
+            player_result['performance']["satisfaction_delta"] = int(satisfaction_change * factors['satisfaction_factor'])
 
     @staticmethod
     def satisfaction_change_for_non_players(non_players):
@@ -460,8 +460,8 @@ class PostGameProcessor:
         """
         # Get match kind factors
         factors = db.get_match_kind_factors(match_kind)
-        logger.info(f"🎮 Processing {factors['name']} match with factors: attribute={factors['attribute_delta_factor']}, freshness={factors['freshness_delta_factor']}, satisfaction={factors['satisfaction_delta_factor']}")
-        print(f"🎮 Processing {factors['name']} match with factors: attribute={factors['attribute_delta_factor']}, freshness={factors['freshness_delta_factor']}, satisfaction={factors['satisfaction_delta_factor']}")
+        logger.info(f"🎮 Processing {factors['name']} match with factors: improvement={factors['improvement_factor']}, fatigue={factors['fatigue_factor']}, satisfaction={factors['satisfaction_factor']}")
+        print(f"🎮 Processing {factors['name']} match with factors: improvement={factors['improvement_factor']}, fatigue={factors['fatigue_factor']}, satisfaction={factors['satisfaction_factor']}")
         
         team1_formation = self.get_team_formation(team1_id)
         team2_formation = self.get_team_formation(team2_id)
@@ -517,20 +517,20 @@ class PostGameProcessor:
             
             # Apply match kind factor to attribute deltas
             attribute_updates = {
-                attr: delta * factors['attribute_delta_factor']
+                attr: delta * factors['improvement_factor']
                 for attr, delta in attribute_updates.items()
             }
             
             # Calculate freshness drop and apply match kind factor
             base_freshness_delta = -self.calculate_freshness_drop(player['properties']['Endurance'])
-            freshness_delta = base_freshness_delta * factors['freshness_delta_factor']
+            freshness_delta = base_freshness_delta * factors['fatigue_factor']
             
             # DEBUG: Log freshness calculation for each player
-            logger.info(f"  📊 Player {player['player_id']} ({player['name']}): Endurance={player['properties']['Endurance']}, Base Delta={base_freshness_delta}, Factor={factors['freshness_delta_factor']}, Final Delta={freshness_delta}")
+            logger.info(f"  📊 Player {player['player_id']} ({player['name']}): Endurance={player['properties']['Endurance']}, Base Delta={base_freshness_delta}, Factor={factors['fatigue_factor']}, Final Delta={freshness_delta}")
             print(f"  📊 Player {player['player_id']} ({player['name']}):")
             print(f"     - Endurance: {player['properties']['Endurance']}")
             print(f"     - Base Delta (raw): {base_freshness_delta}")
-            print(f"     - Factor: {factors['freshness_delta_factor']}")
+            print(f"     - Factor: {factors['fatigue_factor']}")
             print(f"     - Final Delta: {freshness_delta}")
 
             results.append({
@@ -564,7 +564,7 @@ class PostGameProcessor:
         for result in results:
             if 'satisfaction_delta' in result['performance']:
                 result['performance']['satisfaction_delta'] = int(
-                    result['performance']['satisfaction_delta'] * factors['satisfaction_delta_factor']
+                    result['performance']['satisfaction_delta'] * factors['satisfaction_factor']
                 )
 
         SatisfactionCalculator.satisfaction_change_for_non_players(non_players)
