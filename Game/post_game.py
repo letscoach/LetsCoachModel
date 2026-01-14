@@ -1,7 +1,10 @@
 import json
 import random
+import logging
 from Game import formation_grader
 from Helpers import SQL_db as db
+
+logger = logging.getLogger(__name__)
 
 def round_up_to_half(score):
     return round((score * 2 + 1) // 1) / 2
@@ -457,6 +460,7 @@ class PostGameProcessor:
         """
         # Get match kind factors
         factors = db.get_match_kind_factors(match_kind)
+        logger.info(f"🎮 Processing {factors['name']} match with factors: attribute={factors['attribute_delta_factor']}, freshness={factors['freshness_delta_factor']}, satisfaction={factors['satisfaction_delta_factor']}")
         print(f"🎮 Processing {factors['name']} match with factors: attribute={factors['attribute_delta_factor']}, freshness={factors['freshness_delta_factor']}, satisfaction={factors['satisfaction_delta_factor']}")
         
         team1_formation = self.get_team_formation(team1_id)
@@ -522,6 +526,7 @@ class PostGameProcessor:
             freshness_delta = base_freshness_delta * factors['freshness_delta_factor']
             
             # DEBUG: Log freshness calculation for each player
+            logger.info(f"  📊 Player {player['player_id']} ({player['name']}): Endurance={player['properties']['Endurance']}, Base Delta={base_freshness_delta}, Factor={factors['freshness_delta_factor']}, Final Delta={freshness_delta}")
             print(f"  📊 Player {player['player_id']} ({player['name']}):")
             print(f"     - Endurance: {player['properties']['Endurance']}")
             print(f"     - Base Delta (raw): {base_freshness_delta}")

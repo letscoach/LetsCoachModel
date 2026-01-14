@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import logging
 
 import pymysql
 from google.cloud.sql.connector import Connector
@@ -8,6 +9,8 @@ from Helpers.table_def import tables as DB_TABLES
 import Helpers.sql_queries as sql_queries
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
+
+logger = logging.getLogger(__name__)
 
 pool = None
 connector = None
@@ -163,9 +166,11 @@ def set_player_freshness(freshness_delta, operator ,token):
     try:
         query = sql_queries.SET_FRESHNESS_VALUE.format(token=token, freshness_value=freshness_delta, operator = operator)
         # DEBUG: Log before database update
+        logger.info(f"🔄 DB UPDATE - Player {token}: freshness_delta={freshness_delta}, operator={operator}")
         print(f"🔄 DB UPDATE - Player {token}: freshness_delta={freshness_delta}, operator={operator}")
         print(f"   Query: {query[:100]}...")
         exec_update_query(query)
+        logger.info(f"✅ Freshness updated for {token}")
         print(f"✅ Freshness updated for {token}")
     except Exception as e:
         print(f"❌ Error setting player freshness for {token}: {e}")
@@ -243,6 +248,7 @@ def insert_player_attributes_game_effected(players_data, match_id):
         query = sql_queries.INSERT_IMPROVEMENT_MATCH_GAME_EFFECTED
         frsheness_attr = key['performance'].get('freshness_delta')
         # DEBUG: Log freshness delta before DB insert
+        logger.info(f"📌 BEFORE DB INSERT - Player {key['player_id']}: freshness_delta={frsheness_attr}")
         print(f"\n📌 BEFORE DB INSERT - Player {key['player_id']}:")
         print(f"   - freshness_delta value: {frsheness_attr}")
         if frsheness_attr:
