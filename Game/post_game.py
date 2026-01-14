@@ -42,10 +42,14 @@ class EventLogger:
 
 class SatisfactionCalculator:
     @staticmethod
-    def calculate_satisfaction_changes(results, team1_score, team2_score, man_of_the_match):
+    def calculate_satisfaction_changes(results, team1_score, team2_score, man_of_the_match, factors=None):
         """
         Calculates the satisfaction change for each player based on playing time, match result, and personal performance.
         """
+        if factors is None:
+            factors = {
+                'satisfaction_delta_factor': 1.0
+            }
         satisfaction_changes = {}
         is_draw = team1_score == team2_score
         goal_difference = abs(team1_score - team2_score)
@@ -115,7 +119,7 @@ class SatisfactionCalculator:
             #    satisfaction_change -= 2
 
             # Apply changes to player
-            player_result['performance']["satisfaction_delta"] = satisfaction_change
+            player_result['performance']["satisfaction_delta"] = int(satisfaction_change * factors['satisfaction_delta_factor'])
 
     @staticmethod
     def satisfaction_change_for_non_players(non_players):
@@ -542,7 +546,7 @@ class PostGameProcessor:
             })
 
         man_of_the_match = calc_man_of_the_match(results)
-        SatisfactionCalculator.calculate_satisfaction_changes(results, team1_score, team2_score, man_of_the_match)
+        SatisfactionCalculator.calculate_satisfaction_changes(results, team1_score, team2_score, man_of_the_match, factors)
         
         # Apply match kind factor to satisfaction deltas
         for result in results:
