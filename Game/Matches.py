@@ -147,6 +147,17 @@ def generate_schedule_single_round(league_id, start_date):
 
 def game_launcher(match):
     telegram.send_log_message("1.launch game now")
+    
+    # DEBUG: Log match kind at start
+    match_kind = match.get('kind', 1)
+    kind_name = {1: 'League', 2: 'Friendly', 3: 'Cup'}.get(match_kind, f'Unknown({match_kind})')
+    print(f"\n{'='*80}")
+    print(f"🎮 MATCH START - KIND: {match_kind} ({kind_name})")
+    print(f"   Match ID: {match.get('match_id')}")
+    print(f"{'='*80}\n")
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"🎮 MATCH START - KIND: {match_kind} ({kind_name}), Match ID: {match.get('match_id')}")
 
     # Check/Validate opponent existence before launching
     away_team = match.get('away_team_id')
