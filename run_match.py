@@ -57,7 +57,7 @@ def main():
         match_id = match_data['match_id']
         home_team_id = match_data['home_team_id']
         away_team_id = match_data['away_team_id']
-        match_kind = match_data.get('kind', 'league')
+        match_kind = match_data.get('kind', 1)  # Default to 1 (League)
 
         processor = GameProcessor(match_id, match_kind)
         result = processor.init_game(home_team_id, away_team_id)

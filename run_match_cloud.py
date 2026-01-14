@@ -98,8 +98,8 @@ print(f"  DateTime: {first_match.get('match_datetime')}")
 
 # בא נבדוק אם יש 'kind' בפרטי המשחק
 if 'kind' not in first_match:
-    print("  ⚠️ הוספת 'kind' = 'league'")
-    first_match['kind'] = 'league'
+    print("  ⚠️ הוספת 'kind' = 1 (League)")
+    first_match['kind'] = 1  # Default to 1 (League)
 
 print(f"\n🎮 הרצת המשחק...")
 try:
