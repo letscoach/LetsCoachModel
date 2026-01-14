@@ -971,7 +971,8 @@ class PostGameProcessor:
         # Step 1: Simulate regular 90 minute game
         regular_time = self.process_post_game(team1_id, team2_id,
                                               team1_score if team1_score is not None else random.randint(0, 3),
-                                              team2_score if team2_score is not None else random.randint(0, 3))
+                                              team2_score if team2_score is not None else random.randint(0, 3),
+                                              match_kind=3)  # Must-win games use kind=3 (Cup)
 
         # Extract the scores
         t1_score = regular_time["result"]["team1_score"]
