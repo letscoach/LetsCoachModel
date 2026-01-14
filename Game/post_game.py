@@ -520,6 +520,13 @@ class PostGameProcessor:
             # Calculate freshness drop and apply match kind factor
             base_freshness_delta = -self.calculate_freshness_drop(player['properties']['Endurance'])
             freshness_delta = base_freshness_delta * factors['freshness_delta_factor']
+            
+            # DEBUG: Log freshness calculation for each player
+            print(f"  📊 Player {player['player_id']} ({player['name']}):")
+            print(f"     - Endurance: {player['properties']['Endurance']}")
+            print(f"     - Base Delta (raw): {base_freshness_delta}")
+            print(f"     - Factor: {factors['freshness_delta_factor']}")
+            print(f"     - Final Delta: {freshness_delta}")
 
             results.append({
                 "player_id": player["player_id"],

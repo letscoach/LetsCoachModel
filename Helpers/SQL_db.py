@@ -162,7 +162,11 @@ def update_player_freshness(token, freshness):
 def set_player_freshness(freshness_delta, operator ,token):
     try:
         query = sql_queries.SET_FRESHNESS_VALUE.format(token=token, freshness_value=freshness_delta, operator = operator)
+        # DEBUG: Log before database update
+        print(f"🔄 DB UPDATE - Player {token}: freshness_delta={freshness_delta}, operator={operator}")
+        print(f"   Query: {query[:100]}...")
         exec_update_query(query)
+        print(f"✅ Freshness updated for {token}")
     except Exception as e:
         print(f"❌ Error setting player freshness for {token}: {e}")
         raise
@@ -238,6 +242,9 @@ def insert_player_attributes_game_effected(players_data, match_id):
     for key in players_data:
         query = sql_queries.INSERT_IMPROVEMENT_MATCH_GAME_EFFECTED
         frsheness_attr = key['performance'].get('freshness_delta')
+        # DEBUG: Log freshness delta before DB insert
+        print(f"\n📌 BEFORE DB INSERT - Player {key['player_id']}:")
+        print(f"   - freshness_delta value: {frsheness_attr}")
         if frsheness_attr:
             set_player_freshness(frsheness_attr, '+', key['player_id'])
         sat_attr = key['performance'].get('satisfaction_delta')
