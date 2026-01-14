@@ -795,11 +795,6 @@ def get_match_kind_factors(match_kind_id):
             'fatigue_factor': 1.0,
             'satisfaction_factor': 1.0
         }
-            'name': 'Unknown',
-            'attribute_delta_factor': 1.0,
-            'freshness_delta_factor': 1.0,
-            'satisfaction_delta_factor': 1.0
-        }
 
 def get_all_match_kinds():
     """
@@ -811,9 +806,10 @@ def get_all_match_kinds():
         SELECT 
             id,
             name,
-            attribute_delta_factor,
-            freshness_delta_factor,
-            satisfaction_delta_factor,
+            improvement_factor,
+            fatigue_factor,
+            satisfaction_factor,
+            must_win,
             description
         FROM match_kinds
         ORDER BY id
