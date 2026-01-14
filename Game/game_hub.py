@@ -181,7 +181,8 @@ class GameProcessor:
         team1_score, team2_score = self.simulate_game(team1_grades, team2_grades)
 
         # Step 4: Process post-game data using PostGameProcessor
-        send_log_message(f"Game type {self.game_type}, processing post-game")
+        match_kind_factors = db.get_match_kind_factors(self.game_type)
+        send_log_message(f"Game type {match_kind_factors['name']}, processing post-game")
         output = self.post_game_processor.process_post_game(team1_id, team2_id, team1_score, team2_score, match_kind=self.game_type)
         send_log_message("7.Insert into db all match data")
 
