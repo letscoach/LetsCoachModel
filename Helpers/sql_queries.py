@@ -1052,7 +1052,7 @@ WHERE id = {competition_id};
 
 UPDATE_MATCH_RESULT_CANCELLED = '''
 UPDATE matches
-SET result = 'CANCELLED'
+SET result = 'CANCELED'
 WHERE match_id = {match_id};
 '''
 
