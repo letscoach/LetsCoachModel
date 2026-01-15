@@ -85,6 +85,9 @@ def update_freshness_for_players(player_ids):
     - Calculates freshness update based on time elapsed since last_update
     - Updates the new freshness in the database
     """
+    logger.info(f"🎯 FRESHNESS UPDATE START - Processing {len(player_ids)} players")
+    print(f"🎯 FRESHNESS UPDATE START - Processing {len(player_ids)} players")
+    
     for player_id in player_ids:
         last_update_str, current_freshness, endurance = fetch_player_data(player_id)
         freshness_update = 0
@@ -101,12 +104,18 @@ def update_freshness_for_players(player_ids):
             logger.info(f"🔄 Update Freshness - Player {player_id}: current={current_freshness:.2f}, calculated_gain={freshness_update:.2f}, capped_delta={new_freshness_delta:.2f}, new_total={current_freshness + new_freshness_delta:.2f}")
             print(f"🔄 Update Freshness - Player {player_id}: current={current_freshness:.2f}, gain={freshness_update:.2f}, delta={new_freshness_delta:.2f}, new={current_freshness + new_freshness_delta:.2f}")
             update_player_freshness(player_id, new_freshness_delta)
+    
+    logger.info(f"✅ FRESHNESS UPDATE COMPLETED")
 
 
 #    print("Freshness update completed for all players.")
 
 def update_freshness_for_team(team_id):
+    logger.info(f"🎯 UPDATE_FRESHNESS_FOR_TEAM - Starting for team {team_id}")
+    print(f"🎯 UPDATE_FRESHNESS_FOR_TEAM - Starting for team {team_id}")
     team_players_list = sql_db.get_team_players(team_id)
+    logger.info(f"   Found {len(team_players_list)} players for team {team_id}")
+    print(f"   Found {len(team_players_list)} players for team {team_id}")
     update_freshness_for_players(team_players_list)
 
 # update_freshness_for_team(67)
