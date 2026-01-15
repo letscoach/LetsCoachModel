@@ -1,7 +1,6 @@
 import threading
 from datetime import datetime, timedelta, timezone
 
-from firebase_admin import firestore
 import Helpers.SQL_db as sql_db
 
 import Game.game_hub as game_controller

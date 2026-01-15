@@ -176,6 +176,43 @@ def set_player_freshness(freshness_delta, operator ,token):
         print(f"❌ Error setting player freshness for {token}: {e}")
         raise
 
+def set_player_freshness_with_timestamp(freshness_delta, operator, token, timestamp):
+    """
+    Updates player freshness with a specific timestamp for last_update.
+    Used when freshness is updated during a match - timestamp should be match end time.
+    
+    :param freshness_delta: The amount to change freshness
+    :param operator: '+' or '-' for addition or subtraction
+    :param token: Player ID
+    :param timestamp: datetime object for when to set last_update
+    """
+    try:
+        if timestamp is None:
+            timestamp = datetime.now()
+        
+        timestamp_str = timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        
+        query = f"""
+        UPDATE player_dynamic_attributes
+        SET attribute_value = 
+            CASE
+                WHEN attribute_value {operator} {freshness_delta} < 0 THEN 0
+                ELSE attribute_value {operator} {freshness_delta}
+            END,
+            last_update = '{timestamp_str}'
+        WHERE attribute_id = 15 AND token = '{token}'
+        """
+        
+        logger.info(f"🔄 DB UPDATE (with timestamp) - Player {token}: freshness_delta={freshness_delta}, operator={operator}, last_update={timestamp_str}")
+        print(f"🔄 DB UPDATE (with timestamp) - Player {token}: freshness_delta={freshness_delta}, last_update={timestamp_str}")
+        exec_update_query(query)
+        logger.info(f"✅ Freshness updated for {token} with timestamp {timestamp_str}")
+        print(f"✅ Freshness updated for {token} with timestamp {timestamp_str}")
+    except Exception as e:
+        logger.error(f"❌ Error setting player freshness with timestamp for {token}: {e}")
+        print(f"❌ Error setting player freshness with timestamp for {token}: {e}")
+        raise
+
 def set_player_satisfaction(sat_delta, operator ,token):
     try:
         query = sql_queries.SET_SATISFACTION_VALUE.format(token=token, satisfaction_value= sat_delta, operator = operator)
@@ -243,16 +280,30 @@ def get_team_default_formation(team_id):
     return None if len(result) == 0 else json.loads(result[0]['formation_positions'])
 
 
-def insert_player_attributes_game_effected(players_data, match_id):
+def insert_player_attributes_game_effected(players_data, match_id, match_end_time=None):
+    """
+    Insert player attributes after a match ends.
+    
+    :param players_data: List of player performance data
+    :param match_id: The match ID
+    :param match_end_time: Optional datetime for when match ended (used for freshness last_update)
+    """
+    from datetime import datetime
+    
+    if match_end_time is None:
+        match_end_time = datetime.now()
+    
     for key in players_data:
         query = sql_queries.INSERT_IMPROVEMENT_MATCH_GAME_EFFECTED
         frsheness_attr = key['performance'].get('freshness_delta')
         # DEBUG: Log freshness delta before DB insert
-        logger.info(f"📌 BEFORE DB INSERT - Player {key['player_id']}: freshness_delta={frsheness_attr}")
+        logger.info(f"📌 BEFORE DB INSERT - Player {key['player_id']}: freshness_delta={frsheness_attr}, match_end_time={match_end_time}")
         print(f"\n📌 BEFORE DB INSERT - Player {key['player_id']}:")
         print(f"   - freshness_delta value: {frsheness_attr}")
+        print(f"   - setting last_update to: {match_end_time}")
         if frsheness_attr:
-            set_player_freshness(frsheness_attr, '+', key['player_id'])
+            # Use new function with timestamp to prevent instant recovery on next refresh
+            set_player_freshness_with_timestamp(frsheness_attr, '+', key['player_id'], match_end_time)
         sat_attr = key['performance'].get('satisfaction_delta')
         if sat_attr:
             set_player_satisfaction(sat_attr, '+', key['player_id'])

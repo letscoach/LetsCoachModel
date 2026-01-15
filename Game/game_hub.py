@@ -131,27 +131,17 @@ class GameProcessor:
             - "attribute_deltas"
             - "freshness_delta"
         """
+        from datetime import datetime
+        
         logger.info("Starting update_player_data_in_db for match_id=%s", match_id)
         logger.debug("Received player_stories: %s", player_stories)
 
-        # Prepare a local data structure for collecting updates before bulk insert
- #       players_data = {}
-
-#        for story in player_stories:
-#            player_id = story["player_id"]
-#            attribute_deltas = story["attribute_deltas"]
-#            freshness_delta = story["freshness_delta"]
-#            players_data[player_id]["attribute_deltas"] = attribute_deltas
-#            players_data[player_id]["freshness_delta"] = freshness_delta
-#            logger.debug(
-#                "Processing story for player_id=%s with attribute_deltas=%s, freshness_delta=%s",
-#                player_id, attribute_deltas, freshness_delta
-#            )
-
-#        logger.info("Finished gathering all changes. Performing bulk attribute insertion now.")
+        # Use match end time (now) for freshness last_update timestamp
+        # This prevents instant freshness recovery when player refreshes the page
+        match_end_time = datetime.now()
 
         # Perform the single bulk insert/update
-        db.insert_player_attributes_game_effected(player_stories, match_id)
+        db.insert_player_attributes_game_effected(player_stories, match_id, match_end_time)
 
         logger.info("Bulk insert complete for match_id=%s.", match_id)
     def init_game(self, team1_id: str, team2_id: str) -> Dict:
