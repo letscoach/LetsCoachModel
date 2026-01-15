@@ -72,7 +72,9 @@ def update_freshness_for_players(player_ids):
         freshness_update = 0
 
         if last_update_data['status'] == 'last_effort':
-            freshness_update = calculate_freshness_update(parse_custom_datetime(last_update_data['last_effort_time']), endurance)
+            last_update_parsed = parse_custom_datetime(last_update_data['last_effort_time'])
+            logger.info(f"🔍 DEBUG - Player {player_id}: last_update_raw={last_update_data['last_effort_time']}, parsed={last_update_parsed}")
+            freshness_update = calculate_freshness_update(last_update_parsed, endurance)
 
         if freshness_update > 0:
             new_freshness_delta = min(current_freshness + freshness_update, 100) - current_freshness  # Ensure max freshness is 100
