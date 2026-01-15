@@ -1,5 +1,8 @@
 from datetime import datetime, timedelta
 import Helpers.SQL_db as sql_db  # Importing the module for database interactions
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def fetch_player_data(player_id):
@@ -73,6 +76,8 @@ def update_freshness_for_players(player_ids):
 
         if freshness_update > 0:
             new_freshness_delta = min(current_freshness + freshness_update, 100) - current_freshness  # Ensure max freshness is 100
+            logger.info(f"🔄 Update Freshness - Player {player_id}: current={current_freshness:.2f}, calculated_gain={freshness_update:.2f}, capped_delta={new_freshness_delta:.2f}, new_total={current_freshness + new_freshness_delta:.2f}")
+            print(f"🔄 Update Freshness - Player {player_id}: current={current_freshness:.2f}, gain={freshness_update:.2f}, delta={new_freshness_delta:.2f}, new={current_freshness + new_freshness_delta:.2f}")
             update_player_freshness(player_id, new_freshness_delta)
 
 
