@@ -869,48 +869,11 @@ WHERE tt.training_id = {training_id};
 
 '''
 GET_FRESHNESS_LAST_EFFORT = '''
-WITH last_match AS (
-    SELECT m.match_id, m.match_datetime, m.result, m.time_played_mins
-    FROM matches m
-    WHERE (JSON_CONTAINS(m.home_team_formation, JSON_QUOTE('{token}'), '$')
-           OR JSON_CONTAINS(m.away_team_formation, JSON_QUOTE('{token}'), '$'))
-      AND m.match_datetime <= NOW()
-    ORDER BY m.match_datetime DESC
-    LIMIT 1
-),
-last_training AS (
-    SELECT tt.start_time, ti.duration_minutes
-    FROM team_training tt
-    JOIN training_intensities ti ON tt.intensity_id = ti.intensity_id
-    WHERE JSON_CONTAINS(tt.participating_players, JSON_QUOTE('{token}'), '$')
-    ORDER BY tt.start_time DESC
-    LIMIT 1
-)
-
-SELECT
-    CASE
-        WHEN (SELECT COUNT(*) FROM last_match WHERE result IS NULL) > 0
-        THEN 'in_match'
-
-    WHEN (SELECT COUNT(*) FROM last_match WHERE NOW() < DATE_ADD(match_datetime, INTERVAL time_played_mins MINUTE)) > 0
-    THEN 'in_training'
-
-    WHEN (SELECT COUNT(*) FROM last_training WHERE NOW() < DATE_ADD(start_time, INTERVAL duration_minutes MINUTE)) > 0
-    THEN 'in_training'
-
-    ELSE 'last_effort'
-END AS status,
-
-CASE 
-    WHEN (SELECT COUNT(*) FROM last_match WHERE result IS NULL) > 0
-    THEN 'To be updated at the end of the match'
-
-    ELSE GREATEST(
-        IFNULL((SELECT MAX(DATE_ADD(match_datetime, INTERVAL time_played_mins MINUTE)) FROM last_match), '0000-00-00 00:00:00'),
-        IFNULL((SELECT MAX(DATE_ADD(start_time, INTERVAL duration_minutes MINUTE)) FROM last_training), '0000-00-00 00:00:00')
-    )
-END AS last_effort_time;
-
+SELECT 
+    pda.last_update AS last_effort_time
+FROM player_dynamic_attributes pda
+WHERE pda.token = '{token}'
+  AND pda.attribute_id = 15;
 '''
 SELECT_CURRWNT_TRAINING = '''
 SELECT 

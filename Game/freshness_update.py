@@ -8,18 +8,27 @@ logger = logging.getLogger(__name__)
 def fetch_player_data(player_id):
     """
     Fetches the last freshness update time and endurance for a given player.
-    Returns (last_update, current_freshness, endurance).
+    Returns (last_update_str, current_freshness, endurance).
+    
+    Gets last_update directly from player_dynamic_attributes table (attribute_id=15)
     """
     freshness = sql_db.select_player_freshness(player_id)
-    last_update = sql_db.get_freshness_last_effort(player_id)
+    last_update_result = sql_db.get_freshness_last_effort(player_id)
     current_freshness = freshness['attribute_value']
     data = sql_db.get_player_by_token(player_id)
     attr_dict = data['properties']
-    # DONE Convert to dictionary - AMICHAY - can you return a doctionary?
-    # attr_dict = {key.strip(): float(value.strip()) for key, value in
-    #              (item.split(":") for item in attr_str.split(","))}
     endurance = attr_dict['Endurance']
-    return last_update, current_freshness, endurance
+    
+    # Extract last_update from the query result
+    # get_freshness_last_effort now returns the last_update timestamp directly from player_dynamic_attributes
+    if last_update_result and 'last_effort_time' in last_update_result:
+        last_update_str = last_update_result['last_effort_time']
+    else:
+        # Fallback if no record found (shouldn't happen, but be safe)
+        logger.warning(f"⚠️ No freshness record found for player {player_id}")
+        last_update_str = '0000-00-00 00:00:00'
+    
+    return last_update_str, current_freshness, endurance
 
 def parse_custom_datetime(dt_str: str) -> datetime:
     if dt_str == '0000-00-00 00:00:00':
@@ -63,18 +72,20 @@ def update_player_freshness(player_id, new_freshness_delta):
 def update_freshness_for_players(player_ids):
     """
     API function that updates freshness for all players in the given list.
-    - Fetches player data.
-    - Calculates freshness update.
-    - Updates the new freshness in the database.
+    - Fetches player data from player_dynamic_attributes (attribute_id=15 for freshness)
+    - Calculates freshness update based on time elapsed since last_update
+    - Updates the new freshness in the database
     """
     for player_id in player_ids:
-        last_update_data, current_freshness, endurance = fetch_player_data(player_id)
+        last_update_str, current_freshness, endurance = fetch_player_data(player_id)
         freshness_update = 0
 
-        if last_update_data['status'] == 'last_effort':
-            last_update_parsed = parse_custom_datetime(last_update_data['last_effort_time'])
-            logger.info(f"🔍 DEBUG - Player {player_id}: last_update_raw={last_update_data['last_effort_time']}, parsed={last_update_parsed}")
-            freshness_update = calculate_freshness_update(last_update_parsed, endurance)
+        # Parse the last_update timestamp
+        last_update_parsed = parse_custom_datetime(last_update_str)
+        logger.info(f"🔍 DEBUG - Player {player_id}: last_update_raw={last_update_str}, parsed={last_update_parsed}")
+        
+        # Calculate freshness recovery based on hours since last_update
+        freshness_update = calculate_freshness_update(last_update_parsed, endurance)
 
         if freshness_update > 0:
             new_freshness_delta = min(current_freshness + freshness_update, 100) - current_freshness  # Ensure max freshness is 100
