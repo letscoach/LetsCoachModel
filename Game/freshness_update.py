@@ -30,13 +30,22 @@ def fetch_player_data(player_id):
     
     return last_update_str, current_freshness, endurance
 
-def parse_custom_datetime(dt_str: str) -> datetime:
-    if dt_str == '0000-00-00 00:00:00':
+def parse_custom_datetime(dt_input) -> datetime:
+    """
+    Parse datetime from either string or datetime object.
+    Handles cases where DB returns datetime object directly.
+    """
+    # If it's already a datetime object, return it
+    if isinstance(dt_input, datetime):
+        return dt_input
+    
+    # If it's a string
+    if dt_input == '0000-00-00 00:00:00':
         # Return a default date/time—e.g., Unix epoch
         return datetime(1970, 1, 1, 0, 0, 0)
     else:
         # Parse normally. Adjust the format string as needed
-        return datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S')
+        return datetime.strptime(dt_input, '%Y-%m-%d %H:%M:%S')
 
 
 def calculate_freshness_update(last_update, endurance):
