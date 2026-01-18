@@ -151,8 +151,35 @@ def schedule_handler(data):
         return f"Error: {e}"
 
 
+def training_handler(data):
+    """Handle training completion request"""
+    try:
+        from Training.training import complete_training
+        
+        training_id = data.get('training_id')
+        if not training_id:
+            return "Error: Missing training_id"
+        
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Starting training session {training_id}")
+        
+        result = complete_training(training_id)
+        logger.info(f"Training session {training_id} completed: {result}")
+        return f"Training session {training_id} completed"
+    except Exception as e:
+        import traceback
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error processing training {data.get('training_id')}: {e}", exc_info=True)
+        print(f"Error processing training: {e}")
+        print(traceback.format_exc())
+        return f"Error: {e}"
+
+
 ACTION_MAP = {
     'match': match_handler,
     'competition': competition_handler,
     'generate_schedule': schedule_handler,
+    'training': training_handler,
 }
