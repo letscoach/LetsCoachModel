@@ -102,6 +102,7 @@ UPDATE player_dynamic_attributes
 SET attribute_value = 
     CASE
         WHEN attribute_value {operator} {freshness_value} < 0 THEN 0
+        WHEN attribute_value {operator} {freshness_value} > 100 THEN 100
         ELSE attribute_value {operator} {freshness_value}
     END,
     last_update = NOW()
