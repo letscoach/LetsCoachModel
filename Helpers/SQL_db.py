@@ -29,7 +29,7 @@ def connect_with_connector():
             
             # Get connection using Cloud SQL instance connection name
             conn = connector.connect(
-                "zinc-strategy-446518-s7:us-central1:letscoach-dev",
+                "zinc-strategy-446518-s7:us-central1:letscoach",
                 "pymysql",
                 user="me",
                 password="Ab123456",
