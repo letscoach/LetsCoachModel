@@ -85,69 +85,37 @@ def update_freshness_for_players(player_ids):
     - Calculates freshness update based on time elapsed since last_update
     - Updates the new freshness in the database
     """
-    from Helpers.telegram_manager import send_log_message
-    from datetime import datetime
-    
-    login_time = datetime.utcnow()
-    logger.info(f"🔐 LOGIN FRESHNESS UPDATE - START at {login_time}")
-    logger.info(f"🎯 Processing {len(player_ids)} players")
-    send_log_message(f"🔐 LOGIN FRESHNESS START - {len(player_ids)} players at {login_time}")
+    logger.info(f"🎯 FRESHNESS UPDATE START - Processing {len(player_ids)} players")
+    print(f"🎯 FRESHNESS UPDATE START - Processing {len(player_ids)} players")
     
     for player_id in player_ids:
-        try:
-            last_update_str, current_freshness, endurance = fetch_player_data(player_id)
-            freshness_update = 0
+        last_update_str, current_freshness, endurance = fetch_player_data(player_id)
+        freshness_update = 0
 
-            # Parse the last_update timestamp
-            last_update_parsed = parse_custom_datetime(last_update_str)
-            
-            # Calculate hours passed
-            hours_passed = (datetime.utcnow() - last_update_parsed).total_seconds() / 3600
-            
-            # Calculate freshness recovery based on hours since last_update
-            freshness_update = calculate_freshness_update(last_update_parsed, endurance)
-            new_freshness_total = min(current_freshness + freshness_update, 100)
-            new_freshness_delta = new_freshness_total - current_freshness
+        # Parse the last_update timestamp
+        last_update_parsed = parse_custom_datetime(last_update_str)
+        logger.info(f"🔍 DEBUG - Player {player_id}: last_update_raw={last_update_str}, parsed={last_update_parsed}")
+        
+        # Calculate freshness recovery based on hours since last_update
+        freshness_update = calculate_freshness_update(last_update_parsed, endurance)
 
-            # Detailed logging
-            log_msg = (
-                f"👤 Player {player_id}:\n"
-                f"   ⏰ Last Update: {last_update_str}\n"
-                f"   ⏱️  Hours Passed: {hours_passed:.2f}h\n"
-                f"   💪 Endurance: {endurance}\n"
-                f"   📊 Current Freshness: {current_freshness:.2f}\n"
-                f"   ⬆️  Calculated Gain: {freshness_update:.2f}\n"
-                f"   ✨ New Freshness: {new_freshness_total:.2f}"
-            )
-            logger.info(log_msg)
-            print(log_msg)
-            
-            if freshness_update > 0:
-                send_log_message(log_msg)
-                update_player_freshness(player_id, new_freshness_delta)
-                logger.info(f"   ✅ Updated DB with delta: {new_freshness_delta:.2f}")
-            else:
-                logger.info(f"   ℹ️  No update needed (gain <= 0)")
-                
-        except Exception as e:
-            logger.error(f"❌ Error updating player {player_id}: {e}", exc_info=True)
-            send_log_message(f"❌ Error updating player {player_id}: {e}")
+        if freshness_update > 0:
+            new_freshness_delta = min(current_freshness + freshness_update, 100) - current_freshness  # Ensure max freshness is 100
+            logger.info(f"🔄 Update Freshness - Player {player_id}: current={current_freshness:.2f}, calculated_gain={freshness_update:.2f}, capped_delta={new_freshness_delta:.2f}, new_total={current_freshness + new_freshness_delta:.2f}")
+            print(f"🔄 Update Freshness - Player {player_id}: current={current_freshness:.2f}, gain={freshness_update:.2f}, delta={new_freshness_delta:.2f}, new={current_freshness + new_freshness_delta:.2f}")
+            update_player_freshness(player_id, new_freshness_delta)
     
-    logger.info(f"✅ FRESHNESS UPDATE COMPLETED at {datetime.utcnow()}")
-    send_log_message(f"✅ LOGIN FRESHNESS UPDATE COMPLETED")
+    logger.info(f"✅ FRESHNESS UPDATE COMPLETED")
 
 
 #    print("Freshness update completed for all players.")
 
 def update_freshness_for_team(team_id):
-    from Helpers.telegram_manager import send_log_message
-    
     logger.info(f"🎯 UPDATE_FRESHNESS_FOR_TEAM - Starting for team {team_id}")
     print(f"🎯 UPDATE_FRESHNESS_FOR_TEAM - Starting for team {team_id}")
     team_players_list = sql_db.get_team_players(team_id)
     logger.info(f"   Found {len(team_players_list)} players for team {team_id}")
     print(f"   Found {len(team_players_list)} players for team {team_id}")
-    send_log_message(f"🎯 Updating freshness for team {team_id}: {len(team_players_list)} players")
     update_freshness_for_players(team_players_list)
 
 # update_freshness_for_team(67)
