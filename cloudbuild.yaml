@@ -20,6 +20,8 @@ steps:
         "--allow-unauthenticated",
         "--port",
         "8080",
+        "--set-env-vars",
+        "SQL_INSTANCE=zinc-strategy-446518-s7:us-central1:letscoach,DB_NAME=main_game,DB_USER=me,DB_PASSWORD=Ab123456",
       ]
 
 images:

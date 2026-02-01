@@ -21,6 +21,17 @@ def connect_with_connector():
     """Connect to Google Cloud SQL using Cloud SQL Python Connector"""
     global connector
     
+    # Read from environment variable, default to DEV
+    instance_connection_name = os.getenv(
+        'SQL_INSTANCE',
+        'zinc-strategy-446518-s7:us-central1:letscoach-dev'
+    )
+    db_user = os.getenv('DB_USER', 'me')
+    db_pass = os.getenv('DB_PASSWORD', 'Ab123456')
+    db_name = os.getenv('DB_NAME', 'main_game')
+    
+    print(f"🔗 Connecting to: {instance_connection_name}")
+    
     for attempt in range(MAX_RETRIES):
         try:
             # Initialize Connector if not already
@@ -29,11 +40,11 @@ def connect_with_connector():
             
             # Get connection using Cloud SQL instance connection name
             conn = connector.connect(
-                "zinc-strategy-446518-s7:us-central1:letscoach",
+                instance_connection_name,
                 "pymysql",
-                user="me",
-                password="Ab123456",
-                db="main_game",
+                user=db_user,
+                password=db_pass,
+                db=db_name,
                 cursorclass=pymysql.cursors.DictCursor
             )
             print("✅ Connected to Google Cloud SQL via Cloud SQL Connector!")
