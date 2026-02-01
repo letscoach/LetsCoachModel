@@ -1064,8 +1064,159 @@ def distribute_competition_prizes(competition_id, competition_type_id):
             'competition_id': competition_id,
             'error': str(e)
         }
-        return {
-            'status': 'error',
-            'competition_id': competition_id,
-            'error': str(e)
-        }
+
+
+# ============================================================
+# FRIENDLY MATCH BETTING FUNCTIONS
+# ============================================================
+
+def get_match_betting_info(match_id):
+    """
+    Get betting information for a match including bet_amount and team owners.
+    
+    Returns:
+        dict with: bet_amount, home_team_id, away_team_id, home_owner_id, away_owner_id
+    """
+    try:
+        query = f"""
+        SELECT 
+            m.bet_amount,
+            m.home_team_id,
+            m.away_team_id,
+            m.kind,
+            t1.user_id AS home_owner_id,
+            t2.user_id AS away_owner_id
+        FROM matches m
+        LEFT JOIN teams t1 ON m.home_team_id = t1.team_id
+        LEFT JOIN teams t2 ON m.away_team_id = t2.team_id
+        WHERE m.match_id = {match_id}
+        """
+        result = exec_select_query(query)
+        if result:
+            return result[0]
+        return None
+    except Exception as e:
+        print(f"Error getting match betting info: {e}")
+        return None
+
+
+def process_friendly_match_betting(match_id, home_score, away_score):
+    """
+    Process betting payout after a friendly match ends.
+    - Winner gets 2x the bet_amount (their stake back + opponent's stake)
+    - On draw, both get refunded
+    
+    Args:
+        match_id: The match ID
+        home_score: Home team's score
+        away_score: Away team's score
+        
+    Returns:
+        dict with status and details
+    """
+    from Helpers.telegram_manager import send_log_message
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Get match betting info
+        match_info = get_match_betting_info(match_id)
+        
+        if not match_info:
+            logger.warning(f"No match info found for match {match_id}")
+            return {'status': 'no_match_info', 'match_id': match_id}
+        
+        bet_amount = match_info.get('bet_amount', 0) or 0
+        match_kind = match_info.get('kind', 1)
+        
+        # Only process if it's a friendly match (kind=2) with betting
+        if match_kind != 2 or bet_amount <= 0:
+            logger.info(f"Match {match_id}: No betting to process (kind={match_kind}, bet={bet_amount})")
+            return {'status': 'no_betting', 'match_id': match_id, 'reason': 'not_friendly_or_no_bet'}
+        
+        home_owner = match_info.get('home_owner_id')
+        away_owner = match_info.get('away_owner_id')
+        
+        if not home_owner or not away_owner:
+            logger.error(f"Match {match_id}: Missing owner IDs")
+            return {'status': 'error', 'match_id': match_id, 'reason': 'missing_owners'}
+        
+        logger.info(f"💰 Processing betting for match {match_id}: bet_amount={bet_amount}, score={home_score}-{away_score}")
+        send_log_message(f"💰 Processing betting: Match {match_id}, Bet={bet_amount} LC, Score={home_score}-{away_score}")
+        
+        # Determine winner
+        if home_score > away_score:
+            # Home wins - credit home owner with 2x bet
+            winner_id = home_owner
+            winner_amount = bet_amount * 2
+            result = add_betting_win(winner_id, winner_amount, match_id)
+            send_log_message(f"🏆 Home team wins! {winner_id} receives {winner_amount} LC")
+            return {
+                'status': 'winner_paid',
+                'match_id': match_id,
+                'winner': 'home',
+                'winner_id': winner_id,
+                'amount': winner_amount
+            }
+            
+        elif away_score > home_score:
+            # Away wins - credit away owner with 2x bet
+            winner_id = away_owner
+            winner_amount = bet_amount * 2
+            result = add_betting_win(winner_id, winner_amount, match_id)
+            send_log_message(f"🏆 Away team wins! {winner_id} receives {winner_amount} LC")
+            return {
+                'status': 'winner_paid',
+                'match_id': match_id,
+                'winner': 'away',
+                'winner_id': winner_id,
+                'amount': winner_amount
+            }
+            
+        else:
+            # Draw - refund both
+            add_betting_refund(home_owner, bet_amount, match_id)
+            add_betting_refund(away_owner, bet_amount, match_id)
+            send_log_message(f"🤝 Draw! Both teams refunded {bet_amount} LC each")
+            return {
+                'status': 'draw_refunded',
+                'match_id': match_id,
+                'refund_amount': bet_amount
+            }
+            
+    except Exception as e:
+        logger.error(f"Error processing betting for match {match_id}: {e}")
+        send_log_message(f"❌ Betting error: Match {match_id} - {e}")
+        import traceback
+        traceback.print_exc()
+        return {'status': 'error', 'match_id': match_id, 'error': str(e)}
+
+
+def add_betting_win(user_id, amount, match_id):
+    """Credit winner with the prize amount"""
+    try:
+        query = f"""
+        INSERT INTO transactions (user_id, token_coin_id, amount, timestamp, description, transaction_type)
+        VALUES ('{user_id}', 1, {amount}, NOW(), 'Friendly Match Win (Match #{match_id})', 'credit')
+        """
+        result = exec_update_query(query)
+        print(f"✅ Betting win credited: {user_id} +{amount} LC (Match {match_id})")
+        return result
+    except Exception as e:
+        print(f"Error adding betting win: {e}")
+        return None
+
+
+def add_betting_refund(user_id, amount, match_id):
+    """Refund bet amount on draw or match cancellation"""
+    try:
+        query = f"""
+        INSERT INTO transactions (user_id, token_coin_id, amount, timestamp, description, transaction_type)
+        VALUES ('{user_id}', 1, {amount}, NOW(), 'Friendly Match Refund (Match #{match_id})', 'credit')
+        """
+        result = exec_update_query(query)
+        print(f"✅ Betting refund: {user_id} +{amount} LC (Match {match_id})")
+        return result
+    except Exception as e:
+        print(f"Error adding betting refund: {e}")
+        return None

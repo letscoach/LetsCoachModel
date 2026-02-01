@@ -182,6 +182,15 @@ class GameProcessor:
         except Exception as e:
             send_log_message(f"Error : {e}, continue running!")
         self.update_player_data_in_db(self.game_id, output['player_stories'])
+        
+        # Process betting payout for friendly matches (kind=2)
+        if self.game_type == 2:
+            try:
+                betting_result = db.process_friendly_match_betting(self.game_id, team1_score, team2_score)
+                send_log_message(f"Betting processed: {betting_result.get('status')}")
+            except Exception as e:
+                send_log_message(f"Betting error: {e}")
+        
         send_log_message("8.End game_hub")
 
         # Step 6: Return the result and player stories
