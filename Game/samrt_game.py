@@ -2,7 +2,8 @@ import random
 import json
 from collections import defaultdict
 import Helpers.SQL_db as db
-import post_game as pg
+import Game.post_game as pg
+from Game.penalty_kick import PenaltyKick, InGamePenalty
 
 
 class SoccerAttackOpportunitySystem:
@@ -308,6 +309,81 @@ class MatchSimulator:
         self.attack_system = SoccerAttackOpportunitySystem()
         self.event_logger = EventLogger()
 
+    def _check_and_simulate_penalty(self, danger_level, attack_rating, defense_rating, 
+                                     defending_players, attacking_players, defending_team_id,
+                                     attacking_team_id, defense_zone, defending_formation,
+                                     minute, second, player_performances, attacker):
+        """
+        Check if a penalty should be awarded and simulate it if so.
+        
+        Returns:
+            Tuple of (penalty_occurred, goal_scored, score_delta)
+            - penalty_occurred: True if a penalty was awarded
+            - goal_scored: True if the penalty was converted
+            - score_delta: 1 if goal scored, 0 otherwise
+        """
+        defenders = [p for p in defending_players if p.get("position") not in ["GK", "Striker", "Forward"]]
+        avg_aggression = sum(p.get("properties", {}).get("Aggression", 50) for p in defenders) / max(len(defenders), 1)
+        
+        penalty_awarded, foul_details = InGamePenalty.check_penalty_awarded(
+            danger_level=danger_level,
+            attack_rating=attack_rating,
+            defense_rating=defense_rating,
+            defender_aggression=avg_aggression
+        )
+        
+        if not penalty_awarded:
+            return False, False, 0
+        
+        # Penalty awarded!
+        fouling_defender = self._choose_defender_for_block(defending_players, defense_zone, defending_formation)
+        
+        self.event_logger.log_event(
+            minute=minute, second=second,
+            token=fouling_defender["player_id"] if fouling_defender else "unknown",
+            team_id=defending_team_id,
+            action_id=13,
+            description=f"PENALTY! Foul by {fouling_defender['player_id'] if fouling_defender else 'defender'} on {attacker['player_id']}"
+        )
+        
+        if fouling_defender and fouling_defender["player_id"] in player_performances:
+            player_performances[fouling_defender["player_id"]]["punished"] = True
+        
+        goalkeeper = next((p for p in defending_players if p.get("position") == "GK"), defending_players[0])
+        
+        goal_scored, penalty_details = InGamePenalty.simulate_in_game_penalty(
+            attacking_team_players=attacking_players,
+            defending_goalkeeper=goalkeeper,
+            minute=minute
+        )
+        
+        if goal_scored:
+            self.event_logger.log_event(
+                minute=minute, second=second + 1,
+                token=penalty_details["kicker_id"],
+                team_id=attacking_team_id,
+                action_id=1,
+                description=f"PENALTY GOAL by {penalty_details['kicker_name']}!"
+            )
+            
+            if penalty_details["kicker_id"] in player_performances:
+                player_performances[penalty_details["kicker_id"]]["scored_goal"] = \
+                    player_performances[penalty_details["kicker_id"]].get("scored_goal", 0) + 1
+        else:
+            self.event_logger.log_event(
+                minute=minute, second=second + 1,
+                token=penalty_details["kicker_id"],
+                team_id=attacking_team_id,
+                action_id=15,
+                description=f"Penalty {penalty_details['outcome'].upper()} by {penalty_details['kicker_name']}"
+            )
+            
+            if penalty_details["outcome"] == "saved" and goalkeeper["player_id"] in player_performances:
+                player_performances[goalkeeper["player_id"]]["defense_action"] = \
+                    player_performances[goalkeeper["player_id"]].get("defense_action", 0) + 1
+        
+        return True, goal_scored, 1 if goal_scored else 0
+
     def simulate_football_match(self, team1, team2):
         """
         Simulate a football match between two teams.
@@ -340,7 +416,7 @@ class MatchSimulator:
         team1_zone_ratings = self._calculate_team_zone_ratings(team1_players, team1_formation)
         team2_zone_ratings = self._calculate_team_zone_ratings(team2_players, team2_formation)
 
-        # Total number of attacks in a match
+        # Total number of attacks in a regular match
         total_attacks = 200
 
         # Attacking zone pairs (attacking zone vs defending zone)
@@ -414,6 +490,21 @@ class MatchSimulator:
                 attacker = self._choose_player_for_attack(attacking_players, attack_zone, attacking_formation)
 
                 if attacker:
+                    # Check for penalty first
+                    penalty_occurred, pen_goal, pen_score = self._check_and_simulate_penalty(
+                        danger_level, attack_rating, defense_rating,
+                        defending_players, attacking_players, defending_team_id,
+                        attacking_team_id, defense_zone, defending_formation,
+                        minute, second, player_performances, attacker
+                    )
+                    
+                    if penalty_occurred:
+                        if attacking_team_id == team1_id:
+                            team1_score += pen_score
+                        else:
+                            team2_score += pen_score
+                        continue  # Skip normal shot logic
+
                     # Log shot attempt
                     self.event_logger.log_event(
                         minute=minute,
@@ -1209,6 +1300,21 @@ class MatchSimulator:
                 attacker = self._choose_player_for_attack(attacking_players, attack_zone, attacking_formation)
 
                 if attacker:
+                    # Check for penalty first (extra time version)
+                    penalty_occurred, pen_goal, pen_score = self._check_and_simulate_penalty(
+                        danger_level, attack_rating, defense_rating,
+                        defending_players, attacking_players, defending_team_id,
+                        attacking_team_id, defense_zone, defending_formation,
+                        minute, second, player_performances, attacker
+                    )
+                    
+                    if penalty_occurred:
+                        if attacking_team_id == team1_id:
+                            team1_score += pen_score
+                        else:
+                            team2_score += pen_score
+                        continue  # Skip normal shot logic
+
                     # Log shot attempt
                     self.event_logger.log_event(
                         minute=minute,
@@ -1755,6 +1861,21 @@ class MatchSimulator:
                 attacker = self._choose_player_for_attack(attacking_players, attack_zone, attacking_formation)
 
                 if attacker:
+                    # Check for penalty first
+                    penalty_occurred, pen_goal, pen_score = self._check_and_simulate_penalty(
+                        danger_level, attack_rating, defense_rating,
+                        defending_players, attacking_players, defending_team_id,
+                        attacking_team_id, defense_zone, defending_formation,
+                        minute, second, player_performances, attacker
+                    )
+                    
+                    if penalty_occurred:
+                        if attacking_team_id == team1_id:
+                            team1_score += pen_score
+                        else:
+                            team2_score += pen_score
+                        continue  # Skip normal shot logic
+
                     # Log shot attempt
                     self.event_logger.log_event(
                         minute=minute,

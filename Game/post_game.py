@@ -2,6 +2,7 @@ import json
 import random
 import logging
 from Game import formation_grader
+from Game.penalty_kick import PenaltyKick, PenaltyShootoutSimulator
 from Helpers import SQL_db as db
 
 logger = logging.getLogger(__name__)
