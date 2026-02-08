@@ -66,7 +66,7 @@ class SatisfactionCalculator:
                 team_lost = True
             #player = player_result["player_data"]
             player_id = player_result["player_id"]
-            minutes_played = 90#player_result.get("minutes_played", 0)
+            minutes_played = player_result.get("minutes_played", 90)  # Default 90 if not specified
             satisfaction_change = 0
 
             # Playing Time Impact
@@ -541,6 +541,7 @@ class PostGameProcessor:
                 "player_team_id": player["team_id"],
                 "player_properties": player['properties'],
                 "player_position": player['position'],
+                "minutes_played": 90,  # TODO: Update when substitutions are implemented
                 "performance": {
                     "overall_score": calculate_player_score(
                         player, story,
