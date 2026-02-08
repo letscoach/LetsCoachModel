@@ -36,17 +36,17 @@ class GameManager:
 
         send_log_message("3.Get formation")
 
-        # Retrieve formations
-        team1_formation = self.get_team_formation(team1_id)
-        team2_formation = self.get_team_formation(team2_id)
+        # Retrieve formations (including captain tokens)
+        team1_formation, team1_captain = self.get_team_formation(team1_id)
+        team2_formation, team2_captain = self.get_team_formation(team2_id)
 
         send_log_message("4.Update formation")
         db.insert_opening_formations(self.game_id)
 
         send_log_message("5.Calc team grades")
-        # Calculate grades for both teams
-        team1_grades = self.calculate_team_grades(team1_formation)
-        team2_grades = self.calculate_team_grades(team2_formation)
+        # Calculate grades for both teams (with captain bonus)
+        team1_grades = self.calculate_team_grades(team1_formation, team1_captain)
+        team2_grades = self.calculate_team_grades(team2_formation, team2_captain)
 
         # Add team_id to the grades
         team1_grades['team_id'] = team1_id
@@ -162,12 +162,12 @@ class GameManager:
         self._update_player_freshness(team2_id, current_minute)
 
         # 2. Recalculate team formations (might change due to fatigue/injuries)
-        team1_formation = self.get_team_formation(team1_id)
-        team2_formation = self.get_team_formation(team2_id)
+        team1_formation, team1_captain = self.get_team_formation(team1_id)
+        team2_formation, team2_captain = self.get_team_formation(team2_id)
 
-        # 3. Recalculate team grades with updated player stats
-        team1_grades = self.calculate_team_grades(team1_formation)
-        team2_grades = self.calculate_team_grades(team2_formation)
+        # 3. Recalculate team grades with updated player stats (with captain bonus)
+        team1_grades = self.calculate_team_grades(team1_formation, team1_captain)
+        team2_grades = self.calculate_team_grades(team2_formation, team2_captain)
 
         team1_grades['team_id'] = team1_id
         team2_grades['team_id'] = team2_id
@@ -545,19 +545,20 @@ class GameManager:
         """
         Retrieve the team formation from the database by team ID.
         - team_id: The ID of the team.
-        - Returns: Formation list.
+        - Returns: Tuple of (Formation list, captain_token).
         """
-        formation = db.get_team_default_formation(team_id)
-        return formation
+        formation, captain_token = db.get_team_default_formation(team_id)
+        return formation, captain_token
 
-    def calculate_team_grades(self, formation_list):
+    def calculate_team_grades(self, formation_list, captain_token=None):
         """
         Calculate team grades using the grading module.
         - formation_list: The team's formation as a list of player IDs.
+        - captain_token: Token of the team captain (gets bonus).
         - Returns: Dictionary with defense, midfield, and offense grades.
         """
         from Game.formation_grader import calc_grades
-        return calc_grades(formation_list)
+        return calc_grades(formation_list, captain_token)
 
     def update_player_data_in_db(self, match_id, player_stories):
         """

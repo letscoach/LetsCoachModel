@@ -63,8 +63,8 @@ def ensure_list_of_lists(input_value):
         raise TypeError("Input must be a string or a list.")
 
 
-def create_formation_from_list(formation_list):
-    logger.debug(f"Creating formation from list: {formation_list}")
+def create_formation_from_list(formation_list, captain_token=None):
+    logger.debug(f"Creating formation from list: {formation_list}, captain: {captain_token}")
     players = []
     formation_list = ensure_list_of_lists(formation_list)
 
@@ -80,8 +80,13 @@ def create_formation_from_list(formation_list):
                 player_data = sql_db.get_player_by_token(player_id)
                 logger.debug(f"Retrieved player data: {player_data}")
 
+                # Check if this player is the captain
+                is_captain = (captain_token is not None and player_id == captain_token)
+                if is_captain:
+                    logger.info(f"Captain found: {player_id} at position {position}")
+
                 # Create Player object with retrieved data
-                player = Player(properties=player_data, position=position)
+                player = Player(properties=player_data, position=position, token=player_id, is_captain=is_captain)
                 players.append(player)
             else:
                 logger.debug(f"Skipping player at position: ({i}, {j}) - either no player ID or invalid position")
@@ -94,9 +99,11 @@ def create_formation_from_list(formation_list):
 
 # Define a Player as a dictionary with properties and a position
 class Player:
-    def __init__(self, properties: Dict[str, int], position: str):
+    def __init__(self, properties: Dict[str, int], position: str, token: str = None, is_captain: bool = False):
         self.properties = properties
         self.position = position
+        self.token = token
+        self.is_captain = is_captain
 
 
 # Define Formation as a list of Players
@@ -240,14 +247,22 @@ def calculate_team_grades(formation: Formation) -> Tuple[float, float, float]:
                      f"Freshness Correction: {freshness_correction}")
 
         satisfaction_correction = (((prop_dict["Satisfaction"]/100) * 8) - 4) / 100 + 1
-        logger.debug(f"Freshness for player {player.position}: {prop_dict['Freshness']}, "
-                     f"Freshness Correction: {freshness_correction}")
+        logger.debug(f"Satisfaction for player {player.position}: {prop_dict.get('Satisfaction', 50)}, "
+                     f"Satisfaction Correction: {satisfaction_correction}")
 
+        # Captain bonus: 20% bonus scaled by Game_Vision (0-100)
+        # If captain has Game_Vision of 100, they get full 20% bonus
+        # If captain has Game_Vision of 50, they get 10% bonus
+        captain_bonus = 1.0
+        if player.is_captain:
+            game_vision = prop_dict.get("Game_vision", 50)
+            captain_bonus = 1 + (0.20 * game_vision / 100)
+            logger.info(f"Captain bonus applied: {captain_bonus:.3f} (Game_Vision: {game_vision})")
 
         # Calculate and log the product and updated totals for each category
-        defense_product = satisfaction_correction * freshness_correction * defense_grade * POSITION_FACTORS["defense"][pos_index]
-        midfield_product = satisfaction_correction * freshness_correction * midfield_grade * POSITION_FACTORS["midfield"][pos_index]
-        offense_product = satisfaction_correction * freshness_correction * offense_grade * POSITION_FACTORS["offense"][pos_index]
+        defense_product = captain_bonus * satisfaction_correction * freshness_correction * defense_grade * POSITION_FACTORS["defense"][pos_index]
+        midfield_product = captain_bonus * satisfaction_correction * freshness_correction * midfield_grade * POSITION_FACTORS["midfield"][pos_index]
+        offense_product = captain_bonus * satisfaction_correction * freshness_correction * offense_grade * POSITION_FACTORS["offense"][pos_index]
 
 
         logger.debug(f"Calculated product for defense: {defense_product}, "
@@ -287,11 +302,11 @@ def calculate_team_grades(formation: Formation) -> Tuple[float, float, float]:
 
 
 # Example usage with the given list
-def calc_grades(formation_list):
-    logger.debug(f"Starting grade calculation for formation list: {formation_list}")
+def calc_grades(formation_list, captain_token=None):
+    logger.debug(f"Starting grade calculation for formation list: {formation_list}, captain: {captain_token}")
 
-    # Create Formation
-    formation = create_formation_from_list(formation_list)
+    # Create Formation (with captain info)
+    formation = create_formation_from_list(formation_list, captain_token)
 
     # Calculate team grades using the formation
     defense_grade, midfield_grade, offense_grade = calculate_team_grades(formation)

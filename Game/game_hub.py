@@ -84,23 +84,25 @@ class GameProcessor:
         self.post_game_processor = PostGameProcessor(self.POSITION_WEIGHTS)
         self.game_id = game_id
         self.game_type = game_type
-    def get_team_formation(self, team_id: str) -> List[List[str]]:
+        
+    def get_team_formation(self, team_id: str) -> Tuple[List[List[str]], str]:
         """
         Retrieve the team formation from the database by team ID.
         - team_id: The ID of the team.
-        - Returns: Formation list.
+        - Returns: Tuple of (Formation list, captain_token).
         """
         #team_data = db.get_document('Teams','team_id', team_id) #db.get_team(team_id)
-        formation = db.get_team_default_formation(team_id)
-        return formation
+        formation, captain_token = db.get_team_default_formation(team_id)
+        return formation, captain_token
 
-    def calculate_team_grades(self, formation_list: List[List[str]]) -> Dict[str, float]:
+    def calculate_team_grades(self, formation_list: List[List[str]], captain_token: str = None) -> Dict[str, float]:
         """
         Calculate team grades using the grading module.
         - formation_list: The team's formation as a list of player IDs.
+        - captain_token: Token of the team captain (gets bonus).
         - Returns: Dictionary with defense, midfield, and offense grades.
         """
-        return calc_grades(formation_list)
+        return calc_grades(formation_list, captain_token)
 
     def simulate_game(self, team1_grades: Dict[str, float], team2_grades: Dict[str, float]) -> Tuple[int, int]:
         """
@@ -156,16 +158,16 @@ class GameProcessor:
         fu.update_freshness_for_team(team1_id)
         fu.update_freshness_for_team(team2_id)
         send_log_message("3.Get formation")
-        # Step 1: Retrieve formations
-        team1_formation = self.get_team_formation(team1_id)
-        team2_formation = self.get_team_formation(team2_id)
+        # Step 1: Retrieve formations (including captain tokens)
+        team1_formation, team1_captain = self.get_team_formation(team1_id)
+        team2_formation, team2_captain = self.get_team_formation(team2_id)
         send_log_message("4.Update formation")
         db.insert_opening_formations(self.game_id)
 
         send_log_message("5.Calc team grades")
-        # Step 2: Calculate grades for both teams
-        team1_grades = self.calculate_team_grades(team1_formation)
-        team2_grades = self.calculate_team_grades(team2_formation)
+        # Step 2: Calculate grades for both teams (with captain bonus)
+        team1_grades = self.calculate_team_grades(team1_formation, team1_captain)
+        team2_grades = self.calculate_team_grades(team2_formation, team2_captain)
         send_log_message("6.Simulate the game")
         # Step 3: Simulate the game
         team1_score, team2_score = self.simulate_game(team1_grades, team2_grades)

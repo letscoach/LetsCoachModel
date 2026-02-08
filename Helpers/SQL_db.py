@@ -286,9 +286,17 @@ def get_team_players(team_id):
 
 
 def get_team_default_formation(team_id):
+    """
+    Get team's default formation including captain token.
+    Returns: tuple (formation_positions, captain_token) or (None, None) if not found
+    """
     query = sql_queries.GET_TEAM_DEFAULT_FORMATION.format(team_id=team_id)
     result = exec_select_query(query)
-    return None if len(result) == 0 else json.loads(result[0]['formation_positions'])
+    if len(result) == 0:
+        return None, None
+    formation_positions = json.loads(result[0]['formation_positions'])
+    captain_token = result[0].get('captain_token', None)
+    return formation_positions, captain_token
 
 
 def insert_player_attributes_game_effected(players_data, match_id, match_end_time=None):

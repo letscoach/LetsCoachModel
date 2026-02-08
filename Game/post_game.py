@@ -175,7 +175,9 @@ class PostGameProcessor:
         self.position_weights = position_weights
 
     def get_team_formation(self, team_id):
-        return db.get_team_default_formation(team_id)
+        """Get team formation (captain token not needed for post-game processing)."""
+        formation, _ = db.get_team_default_formation(team_id)
+        return formation
 
     def fetch_player_data(self, formation):
         players = []
