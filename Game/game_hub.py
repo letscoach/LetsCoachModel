@@ -104,11 +104,12 @@ class GameProcessor:
         """
         return calc_grades(formation_list, captain_token)
 
-    def simulate_game(self, team1_grades: Dict[str, float], team2_grades: Dict[str, float]) -> Tuple[int, int]:
+    def simulate_game(self, team1_grades: Dict[str, float], team2_grades: Dict[str, float], home_advantage: bool = False) -> Tuple[int, int]:
         """
         Simulate the game and calculate the result.
-        - team1_grades: Team 1 grades as a dictionary.
-        - team2_grades: Team 2 grades as a dictionary.
+        - team1_grades: Team 1 grades as a dictionary (HOME team if home_advantage=True).
+        - team2_grades: Team 2 grades as a dictionary (AWAY team if home_advantage=True).
+        - home_advantage: If True, team1 gets home advantage bonuses.
         - Returns: Tuple with the scores of team 1 and team 2.
         """
         team1 = {
@@ -121,7 +122,7 @@ class GameProcessor:
             "defense": team2_grades[GameDefinition.defense_score],
             "midfield": team2_grades[GameDefinition.midfield_score],
         }
-        return simulate_football_match(team1, team2)
+        return simulate_football_match(team1, team2, home_advantage=home_advantage)
 
     def update_player_data_in_db(self, match_id: int, player_stories: List[Dict]):
         """
@@ -149,8 +150,8 @@ class GameProcessor:
     def init_game(self, team1_id: str, team2_id: str) -> Dict:
         """
         Initialize the game, simulate the result, process post-game data, and update the DB.
-        - team1_id: The ID of the first team.
-        - team2_id: The ID of the second team.
+        - team1_id: The ID of the first team (HOME team).
+        - team2_id: The ID of the second team (AWAY team).
         - Returns: Dictionary containing the result and player stories.
         """
         send_log_message("2.Update Freshness")
@@ -168,9 +169,14 @@ class GameProcessor:
         # Step 2: Calculate grades for both teams (with captain bonus)
         team1_grades = self.calculate_team_grades(team1_formation, team1_captain)
         team2_grades = self.calculate_team_grades(team2_formation, team2_captain)
-        send_log_message("6.Simulate the game")
+        
+        # Determine if home advantage applies (kind=1 is League matches with home/away)
+        # League matches have home advantage since they are part of round-robin with home/away games
+        home_advantage = (self.game_type == 1)  # Enable home advantage for league matches
+        
+        send_log_message(f"6.Simulate the game (home_advantage={home_advantage})")
         # Step 3: Simulate the game
-        team1_score, team2_score = self.simulate_game(team1_grades, team2_grades)
+        team1_score, team2_score = self.simulate_game(team1_grades, team2_grades, home_advantage=home_advantage)
 
         # Step 4: Process post-game data using PostGameProcessor
         send_log_message(f"Game type {self.game_type}, processing post-game")

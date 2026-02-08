@@ -6,6 +6,14 @@ import Game.post_game as pg
 from Game.penalty_kick import PenaltyKick, InGamePenalty
 
 
+# Home advantage constants
+# Based on real football statistics, home teams win ~46% of matches
+# These bonuses give a slight edge to the home team
+HOME_ADVANTAGE_POSSESSION_BONUS = 0.03  # 3% more possession for home team
+HOME_ADVANTAGE_ATTACK_MULTIPLIER = 1.05  # 5% more effective attacks for home team
+HOME_ADVANTAGE_GOAL_PROBABILITY_BONUS = 0.02  # 2% extra goal probability for home team
+
+
 class SoccerAttackOpportunitySystem:
     """
     Implementation of the Soccer Attack Opportunity Probability System as defined in the PRD.
@@ -445,13 +453,14 @@ class MatchSimulator:
             }
         }
 
-    def simulate_football_match(self, team1, team2):
+    def simulate_football_match(self, team1, team2, home_advantage=False):
         """
         Simulate a football match between two teams.
 
         Args:
-            team1: First team data (with players, formation, etc.)
-            team2: Second team data
+            team1: First team data (with players, formation, etc.) - HOME team if home_advantage=True
+            team2: Second team data - AWAY team if home_advantage=True
+            home_advantage: If True, team1 gets home advantage bonuses
 
         Returns:
             Tuple of (team1_score, team2_score, match_events, player_performances)
@@ -476,6 +485,10 @@ class MatchSimulator:
         # Calculate attacking zone ratings for each team
         team1_zone_ratings = self._calculate_team_zone_ratings(team1_players, team1_formation)
         team2_zone_ratings = self._calculate_team_zone_ratings(team2_players, team2_formation)
+        
+        # Apply home advantage to zone ratings if enabled
+        if home_advantage:
+            team1_zone_ratings = {k: v * HOME_ADVANTAGE_ATTACK_MULTIPLIER for k, v in team1_zone_ratings.items()}
 
         # Total number of attacks in a regular match
         total_attacks = 200
@@ -494,6 +507,10 @@ class MatchSimulator:
         # Calculate possession based on midfield strength
         total_midfield = team1_midfield + team2_midfield
         team1_possession = team1_midfield / total_midfield if total_midfield > 0 else 0.5
+        
+        # Apply home advantage to possession if enabled
+        if home_advantage:
+            team1_possession = min(0.70, team1_possession + HOME_ADVANTAGE_POSSESSION_BONUS)
 
         # Simulate attacks
         for attack_num in range(total_attacks):
@@ -582,6 +599,10 @@ class MatchSimulator:
 
                     # Danger level 5 has higher goal probability
                     goal_probability = 0.30 if danger_level == 5 else 0.10
+                    
+                    # Apply home advantage goal bonus for home team (team1)
+                    if home_advantage and attacking_team_id == team1_id:
+                        goal_probability += HOME_ADVANTAGE_GOAL_PROBABILITY_BONUS
 
                     # Calculate if goal is scored
                     if random.random() < goal_probability:
@@ -1084,17 +1105,18 @@ class MatchSimulator:
                     "freshness_delta": freshness_delta
                 }})
 
-    def process_must_win_game(self, team1, team2, team1_score=None, team2_score=None):
+    def process_must_win_game(self, team1, team2, team1_score=None, team2_score=None, home_advantage=False):
         """
         Process a "must win" game where there must be a winner.
         If tied after 90 minutes, the game goes to extra time.
         If still tied after extra time, goes to penalties.
 
         Args:
-            team1: First team data
-            team2: Second team data
+            team1: First team data (HOME team if home_advantage=True)
+            team2: Second team data (AWAY team if home_advantage=True)
             team1_score: Optional preset score for team1 (for testing)
             team2_score: Optional preset score for team2 (for testing)
+            home_advantage: If True, team1 gets home advantage bonuses
 
         Returns:
             Combined match result including all periods and possible shootout
@@ -1102,8 +1124,8 @@ class MatchSimulator:
         team1_id = team1.get("id", "team1")
         team2_id = team2.get("id", "team2")
 
-        # Step 1: Simulate regular 90 minute game
-        regular_time = self.simulate_football_match(team1, team2)
+        # Step 1: Simulate regular 90 minute game (with home advantage if applicable)
+        regular_time = self.simulate_football_match(team1, team2, home_advantage=home_advantage)
 
         # Extract the scores (or use preset scores for testing)
         t1_score = team1_score if team1_score is not None else regular_time["result"]["team1_score"]
@@ -1130,7 +1152,8 @@ class MatchSimulator:
                 team1, team2,
                 regular_time["player_stories"],
                 90,
-                is_first_extra_time=True
+                is_first_extra_time=True,
+                home_advantage=home_advantage
             )
 
             # Update scores
@@ -1147,7 +1170,8 @@ class MatchSimulator:
                     team1, team2,
                     combined_result["player_stories"],
                     105,
-                    is_first_extra_time=False
+                    is_first_extra_time=False,
+                    home_advantage=home_advantage
                 )
 
                 # Update scores
@@ -1192,16 +1216,17 @@ class MatchSimulator:
 
         return combined_result
 
-    def _simulate_extra_time(self, team1, team2, previous_player_stories, prev_time_played, is_first_extra_time=True):
+    def _simulate_extra_time(self, team1, team2, previous_player_stories, prev_time_played, is_first_extra_time=True, home_advantage=False):
         """
         Simulate an extra time period (either 91-105 or 106-120 minutes).
 
         Args:
-            team1: First team data
-            team2: Second team data
+            team1: First team data (HOME team if home_advantage=True)
+            team2: Second team data (AWAY team if home_advantage=True)
             previous_player_stories: Player performances from previous periods
             prev_time_played: Minutes already played (90 or 105)
             is_first_extra_time: Whether this is the first (True) or second (False) extra time
+            home_advantage: If True, team1 gets home advantage bonuses
 
         Returns:
             Match results for this extra time period
@@ -1266,6 +1291,10 @@ class MatchSimulator:
         # Calculate zone ratings for extra time (affected by fatigue)
         team1_zone_ratings = self._calculate_team_zone_ratings(team1_players, team1.get("formation", "4-3-3"))
         team2_zone_ratings = self._calculate_team_zone_ratings(team2_players, team2.get("formation", "4-3-3"))
+        
+        # Apply home advantage to zone ratings if enabled
+        if home_advantage:
+            team1_zone_ratings = {k: v * HOME_ADVANTAGE_ATTACK_MULTIPLIER for k, v in team1_zone_ratings.items()}
 
         # Calculate possession for extra time (affected by fatigue and previous period)
         team1_midfield = self._calculate_midfield_strength(team1_players) * fatigue_factor
@@ -1273,6 +1302,10 @@ class MatchSimulator:
 
         total_midfield = team1_midfield + team2_midfield
         team1_possession = team1_midfield / total_midfield if total_midfield > 0 else 0.5
+        
+        # Apply home advantage to possession if enabled
+        if home_advantage:
+            team1_possession = min(0.70, team1_possession + HOME_ADVANTAGE_POSSESSION_BONUS)
 
         # Reduced number of attacks in extra time
         total_attacks = 30  # Fewer attacks in 15 minutes of extra time
@@ -1393,6 +1426,10 @@ class MatchSimulator:
                     # Lower goal probability in extra time due to fatigue
                     base_goal_probability = 0.20 if danger_level == 5 else 0.08
                     goal_probability = base_goal_probability * fatigue_factor
+                    
+                    # Apply home advantage goal bonus for home team (team1)
+                    if home_advantage and attacking_team_id == team1_id:
+                        goal_probability += HOME_ADVANTAGE_GOAL_PROBABILITY_BONUS
 
                     # Calculate if goal is scored
                     if random.random() < goal_probability:
