@@ -199,6 +199,25 @@ class GameProcessor:
             except Exception as e:
                 send_log_message(f"Betting error: {e}")
         
+        # Check end-of-league for league matches (kind=1)
+        if self.game_type == 1:
+            try:
+                # Get league_id from the match
+                match_info = db.exec_select_query(
+                    f"SELECT league_id FROM matches WHERE match_id = {self.game_id}"
+                )
+                if match_info and match_info[0].get('league_id'):
+                    league_id = match_info[0]['league_id']
+                    end_result = db.process_end_of_league(league_id, self.game_id)
+                    if end_result:
+                        send_log_message(
+                            f"🏆 League {league_id} ended! "
+                            f"Champion: {end_result['champion']['team_name'] if end_result.get('champion') else 'N/A'}, "
+                            f"Top Scorer: {end_result['top_scorer']['player_name'] if end_result.get('top_scorer') else 'N/A'}"
+                        )
+            except Exception as e:
+                send_log_message(f"End-of-league check error: {e}")
+        
         send_log_message("8.End game_hub")
 
         # Step 6: Return the result and player stories

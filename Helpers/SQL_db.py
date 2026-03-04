@@ -701,6 +701,170 @@ def insert_man_of_the_match(token, match_id ):
     exec_update_query(query)
 
 
+############################END OF LEAGUE##############################
+
+def check_league_completed(league_id):
+    """Check if all matches in a league have been played"""
+    query = sql_queries.CHECK_LEAGUE_COMPLETED.format(league_id=league_id)
+    data = exec_select_query(query)
+    if not data:
+        return None
+    row = data[0]
+    return {
+        'league_id': row['league_id'],
+        'required_number_of_teams': row['required_number_of_teams'],
+        'prize_amount': float(row['prize_amount']) if row['prize_amount'] else 0,
+        'status_id': row['status_id'],
+        'completed_matches': row['completed_matches'],
+        'total_matches_needed': row['total_matches_needed'],
+        'is_completed': row['completed_matches'] >= row['total_matches_needed'] and row['status_id'] != 6
+    }
+
+
+def get_league_champion(league_id):
+    """Get the team at the top of the league standings"""
+    query = sql_queries.GET_LEAGUE_CHAMPION.format(league_id=league_id)
+    data = exec_select_query(query)
+    if not data:
+        return None
+    return data[0]
+
+
+def get_top_scorer_by_league(league_id):
+    """Get the player with the most goals in a league"""
+    query = sql_queries.GET_TOP_SCORER_BY_LEAGUE.format(league_id=league_id)
+    data = exec_select_query(query)
+    if not data:
+        return None
+    return data[0]
+
+
+def get_last_match_id_in_league(league_id):
+    """Get the last match_id in a league (for trophy FK)"""
+    query = sql_queries.GET_LAST_MATCH_ID_IN_LEAGUE.format(league_id=league_id)
+    data = exec_select_query(query)
+    if not data:
+        return None
+    return data[0]['match_id']
+
+
+def insert_league_champion_trophy(team_id, league_id, match_id):
+    """Insert League Champion trophy - token='TEAM'"""
+    query = sql_queries.INSERT_LEAGUE_CHAMPION_TROPHY.format(
+        team_id=team_id, league_id=league_id, match_id=match_id
+    )
+    exec_update_query(query)
+
+
+def insert_top_scorer_trophy(token, team_id, league_id, match_id):
+    """Insert Top Scorer trophy"""
+    query = sql_queries.INSERT_TOP_SCORER_TROPHY.format(
+        token=token, team_id=team_id, league_id=league_id, match_id=match_id
+    )
+    exec_update_query(query)
+
+
+def update_league_status_ended(league_id):
+    """Set league status to 6 (ended)"""
+    query = sql_queries.UPDATE_LEAGUE_STATUS_ENDED.format(league_id=league_id)
+    exec_update_query(query)
+
+
+def add_league_prize_transaction(user_id, amount, description):
+    """Add a prize transaction for league rewards"""
+    query = sql_queries.ADD_LEAGUE_PRIZE_TRANSACTION.format(
+        user_id=user_id, amount=amount, description=description
+    )
+    exec_update_query(query)
+
+
+def process_end_of_league(league_id, match_id):
+    """
+    Main function to process end-of-league:
+    1. Check if league is completed
+    2. Determine champion + top scorer
+    3. Insert trophies
+    4. Distribute prizes
+    5. Update league status to ended
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Step 1: Check if league is completed
+    league_info = check_league_completed(league_id)
+    if not league_info or not league_info['is_completed']:
+        return None
+    
+    logger.info(f"🏆 League {league_id} completed! Processing end-of-league...")
+    
+    # Get last match_id for trophy FK
+    last_match_id = match_id  # Use current match as the last match
+    
+    # Step 2: Get champion
+    champion = get_league_champion(league_id)
+    if champion:
+        logger.info(f"🏆 Champion: {champion['team_name']} (team_id={champion['team_id']})")
+        
+        # Insert champion trophy
+        try:
+            insert_league_champion_trophy(champion['team_id'], league_id, last_match_id)
+            logger.info(f"🏆 Champion trophy inserted for team {champion['team_id']}")
+        except Exception as e:
+            logger.error(f"Error inserting champion trophy: {e}")
+        
+        # Distribute champion prize
+        prize_amount = league_info['prize_amount']
+        if prize_amount > 0 and champion.get('user_id'):
+            try:
+                add_league_prize_transaction(
+                    champion['user_id'],
+                    prize_amount,
+                    f"League Champion Prize - League #{league_id}"
+                )
+                logger.info(f"💰 Champion prize {prize_amount} LC sent to user {champion['user_id']}")
+            except Exception as e:
+                logger.error(f"Error distributing champion prize: {e}")
+    
+    # Step 3: Get top scorer
+    top_scorer = get_top_scorer_by_league(league_id)
+    if top_scorer:
+        logger.info(f"⚽ Top Scorer: {top_scorer['player_name']} ({top_scorer['goal_count']} goals)")
+        
+        # Insert top scorer trophy
+        try:
+            insert_top_scorer_trophy(
+                top_scorer['token'], top_scorer['team_id'], league_id, last_match_id
+            )
+            logger.info(f"⚽ Top Scorer trophy inserted for {top_scorer['token']}")
+        except Exception as e:
+            logger.error(f"Error inserting top scorer trophy: {e}")
+        
+        # Distribute top scorer bonus (400 LC from bonuses table)
+        if top_scorer.get('user_id'):
+            try:
+                add_league_prize_transaction(
+                    top_scorer['user_id'],
+                    400,
+                    f"Top Scorer Bonus - League #{league_id}"
+                )
+                logger.info(f"💰 Top Scorer bonus 400 LC sent to user {top_scorer['user_id']}")
+            except Exception as e:
+                logger.error(f"Error distributing top scorer bonus: {e}")
+    
+    # Step 4: Update league status to ended
+    try:
+        update_league_status_ended(league_id)
+        logger.info(f"✅ League {league_id} status updated to ENDED")
+    except Exception as e:
+        logger.error(f"Error updating league status: {e}")
+    
+    return {
+        'champion': champion,
+        'top_scorer': top_scorer,
+        'prize_amount': league_info['prize_amount']
+    }
+
+
 ############################COMPETITIONS##############################
 def select_players_for_competition(competition_id):
     query = sql_queries.GET_COMPETITION_PLAYERS.format(competition_id=competition_id)
