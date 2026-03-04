@@ -988,16 +988,17 @@ GET_TOP_SCORER_BY_LEAGUE = '''
 SELECT 
     p.token,
     p.name AS player_name,
-    p.team_id,
-    t.user_id,
+    COALESCE(t1.team_id, t2.team_id) AS team_id,
+    COALESCE(t1.user_id, t2.user_id) AS user_id,
     COUNT(md.action_id) AS goal_count
 FROM match_details md
 JOIN matches m ON md.match_id = m.match_id
 JOIN players p ON md.token = p.token
-LEFT JOIN teams t ON p.team_id = t.team_id
+LEFT JOIN teams t1 ON p.team_id = t1.team_id
+LEFT JOIN teams t2 ON p.user_id = t2.user_id
 WHERE m.league_id = {league_id}
 AND md.action_id = 1
-GROUP BY p.token, p.name, p.team_id, t.user_id
+GROUP BY p.token, p.name, COALESCE(t1.team_id, t2.team_id), COALESCE(t1.user_id, t2.user_id)
 ORDER BY goal_count DESC
 LIMIT 1;
 '''
