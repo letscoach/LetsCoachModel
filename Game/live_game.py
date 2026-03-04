@@ -2,6 +2,7 @@ import random
 import logging
 from typing import Dict, List, Tuple, Optional
 from Game.formation_grader import *
+from Game.penalty_kick import PenaltyShootoutSimulator
 from Helpers import SQL_db as db
 from Helpers.telegram_manager import send_log_message
 import Game.freshness_update as fu
@@ -36,17 +37,17 @@ class GameManager:
 
         send_log_message("3.Get formation")
 
-        # Retrieve formations
-        team1_formation = self.get_team_formation(team1_id)
-        team2_formation = self.get_team_formation(team2_id)
+        # Retrieve formations (including captain tokens)
+        team1_formation, team1_captain = self.get_team_formation(team1_id)
+        team2_formation, team2_captain = self.get_team_formation(team2_id)
 
         send_log_message("4.Update formation")
         db.insert_opening_formations(self.game_id)
 
         send_log_message("5.Calc team grades")
-        # Calculate grades for both teams
-        team1_grades = self.calculate_team_grades(team1_formation)
-        team2_grades = self.calculate_team_grades(team2_formation)
+        # Calculate grades for both teams (with captain bonus)
+        team1_grades = self.calculate_team_grades(team1_formation, team1_captain)
+        team2_grades = self.calculate_team_grades(team2_formation, team2_captain)
 
         # Add team_id to the grades
         team1_grades['team_id'] = team1_id
@@ -162,12 +163,12 @@ class GameManager:
         self._update_player_freshness(team2_id, current_minute)
 
         # 2. Recalculate team formations (might change due to fatigue/injuries)
-        team1_formation = self.get_team_formation(team1_id)
-        team2_formation = self.get_team_formation(team2_id)
+        team1_formation, team1_captain = self.get_team_formation(team1_id)
+        team2_formation, team2_captain = self.get_team_formation(team2_id)
 
-        # 3. Recalculate team grades with updated player stats
-        team1_grades = self.calculate_team_grades(team1_formation)
-        team2_grades = self.calculate_team_grades(team2_formation)
+        # 3. Recalculate team grades with updated player stats (with captain bonus)
+        team1_grades = self.calculate_team_grades(team1_formation, team1_captain)
+        team2_grades = self.calculate_team_grades(team2_formation, team2_captain)
 
         team1_grades['team_id'] = team1_id
         team2_grades['team_id'] = team2_id
@@ -193,11 +194,20 @@ class GameManager:
         elif current_minute >= 120 and self.game_state['extra_time'] and not self.game_state['penalties']:
             # Extra time ended
             if self.game_state['must_win'] and self.game_state['team1_score'] == self.game_state['team2_score']:
-                # Start penalties
+                # Start penalties - use the shared PenaltyShootoutSimulator
                 self.game_state['penalties'] = True
-                penalty_events, team1_pens, team2_pens = self.simulator._simulate_penalty_shootout(
-                    team1_grades, team2_grades, start_minute=current_minute
-                )
+                
+                # Build player lists from formations
+                team1_players = self._get_players_from_formation(self.game_state['team1_formation'], team1_id)
+                team2_players = self._get_players_from_formation(self.game_state['team2_formation'], team2_id)
+                
+                # Run penalty shootout
+                shootout = PenaltyShootoutSimulator(team1_players, team2_players, team1_id, team2_id)
+                result = shootout.simulate()
+                
+                penalty_events = result["events"]
+                team1_pens = result["team1_score"]
+                team2_pens = result["team2_score"]
 
                 # Add penalty results
                 if team1_pens > team2_pens:
@@ -213,6 +223,11 @@ class GameManager:
                 return {
                     'status': 'penalties',
                     'events': penalty_events,
+                    'penalty_details': {
+                        'team1_score': team1_pens,
+                        'team2_score': team2_pens,
+                        'winner_id': result['winner_id']
+                    },
                     'result': self._get_final_result()
                 }
             else:
@@ -290,6 +305,36 @@ class GameManager:
                 # Update in database
                 if current_minute != 0:
                     db.update_player_freshness(player_id, -freshness_loss)
+
+    def _get_players_from_formation(self, formation, team_id):
+        """
+        Extract player data from formation for penalty shootout.
+        Returns list of dicts with player_id and attributes.
+        """
+        players = []
+        
+        if formation is None:
+            return players
+            
+        for player in formation:
+            if isinstance(player, dict):
+                player_id = player.get('player_id') or player.get('id')
+                player_data = {
+                    'player_id': player_id,
+                    'team_id': team_id,
+                    'Shoot_Precision': player.get('Shoot_Precision', 50),
+                    'Shoot_Power': player.get('Shoot_Power', 50),
+                    'Finishing': player.get('Finishing', 50),
+                    'Reflexes': player.get('Reflexes', 50),
+                    'Diving': player.get('Diving', 50),
+                    'Game_Vision': player.get('Game_Vision', 50),
+                    'Satisfaction': player.get('Satisfaction', 70),
+                    'Freshness': player.get('Freshness', 80),
+                    'position': player.get('position', 'MID')
+                }
+                players.append(player_data)
+        
+        return players
 
     def _get_final_result(self):
         """Returns the final result of the game"""
@@ -545,19 +590,20 @@ class GameManager:
         """
         Retrieve the team formation from the database by team ID.
         - team_id: The ID of the team.
-        - Returns: Formation list.
+        - Returns: Tuple of (Formation list, captain_token).
         """
-        formation = db.get_team_default_formation(team_id)
-        return formation
+        formation, captain_token = db.get_team_default_formation(team_id)
+        return formation, captain_token
 
-    def calculate_team_grades(self, formation_list):
+    def calculate_team_grades(self, formation_list, captain_token=None):
         """
         Calculate team grades using the grading module.
         - formation_list: The team's formation as a list of player IDs.
+        - captain_token: Token of the team captain (gets bonus).
         - Returns: Dictionary with defense, midfield, and offense grades.
         """
         from Game.formation_grader import calc_grades
-        return calc_grades(formation_list)
+        return calc_grades(formation_list, captain_token)
 
     def update_player_data_in_db(self, match_id, player_stories):
         """

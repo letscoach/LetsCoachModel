@@ -2,6 +2,7 @@ import json
 import random
 import logging
 from Game import formation_grader
+from Game.penalty_kick import PenaltyKick, PenaltyShootoutSimulator
 from Helpers import SQL_db as db
 
 logger = logging.getLogger(__name__)
@@ -66,7 +67,7 @@ class SatisfactionCalculator:
                 team_lost = True
             #player = player_result["player_data"]
             player_id = player_result["player_id"]
-            minutes_played = 90#player_result.get("minutes_played", 0)
+            minutes_played = player_result.get("minutes_played", 90)  # Default 90 if not specified
             satisfaction_change = 0
 
             # Playing Time Impact
@@ -175,7 +176,9 @@ class PostGameProcessor:
         self.position_weights = position_weights
 
     def get_team_formation(self, team_id):
-        return db.get_team_default_formation(team_id)
+        """Get team formation (captain token not needed for post-game processing)."""
+        formation, _ = db.get_team_default_formation(team_id)
+        return formation
 
     def fetch_player_data(self, formation):
         players = []
@@ -539,6 +542,7 @@ class PostGameProcessor:
                 "player_team_id": player["team_id"],
                 "player_properties": player['properties'],
                 "player_position": player['position'],
+                "minutes_played": 90,  # TODO: Update when substitutions are implemented
                 "performance": {
                     "overall_score": calculate_player_score(
                         player, story,

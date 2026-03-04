@@ -1,18 +1,18 @@
 steps:
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/letcoach-model:latest", "."]
+    args: ["build", "-t", "gcr.io/$PROJECT_ID/letcoach-model:dev", "."]
 
   - name: "gcr.io/cloud-builders/docker"
-    args: ["push", "gcr.io/$PROJECT_ID/letcoach-model:latest"]
+    args: ["push", "gcr.io/$PROJECT_ID/letcoach-model:dev"]
 
   - name: "gcr.io/cloud-builders/gcloud"
     args:
       [
         "run",
         "deploy",
-        "letcoach-model",
+        "letcoach-model-dev",
         "--image",
-        "gcr.io/$PROJECT_ID/letcoach-model:latest",
+        "gcr.io/$PROJECT_ID/letcoach-model:dev",
         "--platform",
         "managed",
         "--region",
@@ -21,11 +21,11 @@ steps:
         "--port",
         "8080",
         "--set-env-vars",
-        "SQL_INSTANCE=zinc-strategy-446518-s7:us-central1:letscoach,DB_NAME=main_game,DB_USER=me,DB_PASSWORD=Ab123456",
+        "SQL_INSTANCE=zinc-strategy-446518-s7:us-central1:letscoach-dev,DB_NAME=main_game,DB_USER=me,DB_PASSWORD=Ab123456",
       ]
 
 images:
-  - "gcr.io/$PROJECT_ID/letcoach-model:latest"
+  - "gcr.io/$PROJECT_ID/letcoach-model:dev"
 
 options:
   logging: CLOUD_LOGGING_ONLY

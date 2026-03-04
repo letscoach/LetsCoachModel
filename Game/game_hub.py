@@ -84,29 +84,32 @@ class GameProcessor:
         self.post_game_processor = PostGameProcessor(self.POSITION_WEIGHTS)
         self.game_id = game_id
         self.game_type = game_type
-    def get_team_formation(self, team_id: str) -> List[List[str]]:
+        
+    def get_team_formation(self, team_id: str) -> Tuple[List[List[str]], str]:
         """
         Retrieve the team formation from the database by team ID.
         - team_id: The ID of the team.
-        - Returns: Formation list.
+        - Returns: Tuple of (Formation list, captain_token).
         """
         #team_data = db.get_document('Teams','team_id', team_id) #db.get_team(team_id)
-        formation = db.get_team_default_formation(team_id)
-        return formation
+        formation, captain_token = db.get_team_default_formation(team_id)
+        return formation, captain_token
 
-    def calculate_team_grades(self, formation_list: List[List[str]]) -> Dict[str, float]:
+    def calculate_team_grades(self, formation_list: List[List[str]], captain_token: str = None) -> Dict[str, float]:
         """
         Calculate team grades using the grading module.
         - formation_list: The team's formation as a list of player IDs.
+        - captain_token: Token of the team captain (gets bonus).
         - Returns: Dictionary with defense, midfield, and offense grades.
         """
-        return calc_grades(formation_list)
+        return calc_grades(formation_list, captain_token)
 
-    def simulate_game(self, team1_grades: Dict[str, float], team2_grades: Dict[str, float]) -> Tuple[int, int]:
+    def simulate_game(self, team1_grades: Dict[str, float], team2_grades: Dict[str, float], home_advantage: bool = False) -> Tuple[int, int]:
         """
         Simulate the game and calculate the result.
-        - team1_grades: Team 1 grades as a dictionary.
-        - team2_grades: Team 2 grades as a dictionary.
+        - team1_grades: Team 1 grades as a dictionary (HOME team if home_advantage=True).
+        - team2_grades: Team 2 grades as a dictionary (AWAY team if home_advantage=True).
+        - home_advantage: If True, team1 gets home advantage bonuses.
         - Returns: Tuple with the scores of team 1 and team 2.
         """
         team1 = {
@@ -119,7 +122,7 @@ class GameProcessor:
             "defense": team2_grades[GameDefinition.defense_score],
             "midfield": team2_grades[GameDefinition.midfield_score],
         }
-        return simulate_football_match(team1, team2)
+        return simulate_football_match(team1, team2, home_advantage=home_advantage)
 
     def update_player_data_in_db(self, match_id: int, player_stories: List[Dict]):
         """
@@ -147,8 +150,8 @@ class GameProcessor:
     def init_game(self, team1_id: str, team2_id: str) -> Dict:
         """
         Initialize the game, simulate the result, process post-game data, and update the DB.
-        - team1_id: The ID of the first team.
-        - team2_id: The ID of the second team.
+        - team1_id: The ID of the first team (HOME team).
+        - team2_id: The ID of the second team (AWAY team).
         - Returns: Dictionary containing the result and player stories.
         """
         send_log_message("2.Update Freshness")
@@ -156,19 +159,24 @@ class GameProcessor:
         fu.update_freshness_for_team(team1_id)
         fu.update_freshness_for_team(team2_id)
         send_log_message("3.Get formation")
-        # Step 1: Retrieve formations
-        team1_formation = self.get_team_formation(team1_id)
-        team2_formation = self.get_team_formation(team2_id)
+        # Step 1: Retrieve formations (including captain tokens)
+        team1_formation, team1_captain = self.get_team_formation(team1_id)
+        team2_formation, team2_captain = self.get_team_formation(team2_id)
         send_log_message("4.Update formation")
         db.insert_opening_formations(self.game_id)
 
         send_log_message("5.Calc team grades")
-        # Step 2: Calculate grades for both teams
-        team1_grades = self.calculate_team_grades(team1_formation)
-        team2_grades = self.calculate_team_grades(team2_formation)
-        send_log_message("6.Simulate the game")
+        # Step 2: Calculate grades for both teams (with captain bonus)
+        team1_grades = self.calculate_team_grades(team1_formation, team1_captain)
+        team2_grades = self.calculate_team_grades(team2_formation, team2_captain)
+        
+        # Determine if home advantage applies (kind=1 is League matches with home/away)
+        # League matches have home advantage since they are part of round-robin with home/away games
+        home_advantage = (self.game_type == 1)  # Enable home advantage for league matches
+        
+        send_log_message(f"6.Simulate the game (home_advantage={home_advantage})")
         # Step 3: Simulate the game
-        team1_score, team2_score = self.simulate_game(team1_grades, team2_grades)
+        team1_score, team2_score = self.simulate_game(team1_grades, team2_grades, home_advantage=home_advantage)
 
         # Step 4: Process post-game data using PostGameProcessor
         send_log_message(f"Game type {self.game_type}, processing post-game")
@@ -191,6 +199,27 @@ class GameProcessor:
             except Exception as e:
                 send_log_message(f"Betting error: {e}")
         
+
+        # Check end-of-league for league matches (kind=1)
+        if self.game_type == 1:
+            try:
+                # Get league_id from the match
+                match_info = db.exec_select_query(
+                    f"SELECT league_id FROM matches WHERE match_id = {self.game_id}"
+                )
+                if match_info and match_info[0].get('league_id'):
+                    league_id = match_info[0]['league_id']
+                    end_result = db.process_end_of_league(league_id, self.game_id)
+                    if end_result:
+                        send_log_message(
+                            f"🏆 League {league_id} ended! "
+                            f"Champion: {end_result['champion']['team_name'] if end_result.get('champion') else 'N/A'}, "
+                            f"Top Scorer: {end_result['top_scorer']['player_name'] if end_result.get('top_scorer') else 'N/A'}"
+                        )
+            except Exception as e:
+                send_log_message(f"End-of-league check error: {e}")
+        
+
         send_log_message("8.End game_hub")
 
         # Step 6: Return the result and player stories

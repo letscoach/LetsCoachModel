@@ -102,6 +102,7 @@ UPDATE player_dynamic_attributes
 SET attribute_value = 
     CASE
         WHEN attribute_value {operator} {freshness_value} < 0 THEN 0
+        WHEN attribute_value {operator} {freshness_value} > 100 THEN 100
         ELSE attribute_value {operator} {freshness_value}
     END,
     last_update = NOW()
@@ -949,6 +950,86 @@ INSERT INTO
     awarded_at)
 VALUES
   (1, '{token}', {match_id}, NOW());
+'''
+
+##################################END OF LEAGUE ###################################
+
+CHECK_LEAGUE_COMPLETED = '''
+SELECT 
+    l.league_id,
+    l.required_number_of_teams,
+    l.prize_amount,
+    l.status_id,
+    COUNT(DISTINCT CASE WHEN m.result IS NOT NULL AND m.result != 'CANCELED' THEN m.match_id END) AS completed_matches,
+    (l.required_number_of_teams * (l.required_number_of_teams - 1)) AS total_matches_needed
+FROM leagues l
+LEFT JOIN matches m ON m.league_id = l.league_id AND m.kind = 1
+WHERE l.league_id = {league_id}
+GROUP BY l.league_id;
+'''
+
+GET_LEAGUE_CHAMPION = '''
+SELECT 
+    ls.team_id,
+    t.team_name,
+    t.logo_url,
+    t.user_id,
+    ls.points,
+    ls.goal_difference,
+    ls.goals_scored
+FROM league_standings ls
+JOIN teams t ON ls.team_id = t.team_id
+WHERE ls.league_id = {league_id}
+ORDER BY ls.points DESC, ls.goal_difference DESC, ls.goals_scored DESC
+LIMIT 1;
+'''
+
+GET_TOP_SCORER_BY_LEAGUE = '''
+SELECT 
+    p.token,
+    p.name AS player_name,
+    COALESCE(t1.team_id, t2.team_id) AS team_id,
+    COALESCE(t1.user_id, t2.user_id) AS user_id,
+    COUNT(md.action_id) AS goal_count
+FROM match_details md
+JOIN matches m ON md.match_id = m.match_id
+JOIN players p ON md.token = p.token
+LEFT JOIN teams t1 ON p.team_id = t1.team_id
+LEFT JOIN teams t2 ON p.user_id = t2.user_id
+WHERE m.league_id = {league_id}
+AND md.action_id = 1
+GROUP BY p.token, p.name, COALESCE(t1.team_id, t2.team_id), COALESCE(t1.user_id, t2.user_id)
+ORDER BY goal_count DESC
+LIMIT 1;
+'''
+
+GET_LAST_MATCH_ID_IN_LEAGUE = '''
+SELECT match_id
+FROM matches
+WHERE league_id = {league_id}
+ORDER BY match_datetime DESC
+LIMIT 1;
+'''
+
+INSERT_LEAGUE_CHAMPION_TROPHY = '''
+INSERT INTO trophies (trophy_id, token, team_id, league_id, match_id, awarded_at)
+VALUES (2, 'TEAM', {team_id}, {league_id}, {match_id}, NOW());
+'''
+
+INSERT_TOP_SCORER_TROPHY = '''
+INSERT INTO trophies (trophy_id, token, team_id, league_id, match_id, awarded_at)
+VALUES (3, '{token}', {team_id}, {league_id}, {match_id}, NOW());
+'''
+
+UPDATE_LEAGUE_STATUS_ENDED = '''
+UPDATE leagues
+SET status_id = 6
+WHERE league_id = {league_id};
+'''
+
+ADD_LEAGUE_PRIZE_TRANSACTION = '''
+INSERT INTO transactions (user_id, token_coin_id, amount, timestamp, description, transaction_type)
+VALUES ('{user_id}', 1, {amount}, NOW(), '{description}', 'credit');
 '''
 
 ##################################COMPETITION ###################################
